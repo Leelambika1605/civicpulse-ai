@@ -10,6 +10,13 @@ let citizenDraggableMarker = null;
 
 // Landmark coordinates & addresses
 const LANDMARKS = {
+  harinagar: {
+    name: "Harinagar Main Road, Deepthi Nagar, Ward 196 Anjanapura, Bommanahalli, Bengaluru",
+    lat: 12.877206,
+    lng: 77.571510,
+    zone: "Dense Residential Colony",
+    note: "Opposite Annapoorna Tiffin Center, 3m x 2m crater"
+  },
   victoria: {
     name: "Victoria Hospital Emergency Gate, Kalasipalya, Bengaluru",
     lat: 12.9634,
@@ -62,6 +69,14 @@ const LANDMARKS = {
 };
 
 const SAMPLE_CASES = {
+  bbmp_pothole: {
+    title: "Severe 3m x 2m Deep Crater Pothole opp. Annapoorna Tiffin Center",
+    desc: "Critical road crater 3m length x 2m width on Harinagar Main Road opp. Annapoorna Tiffin Center. Causing severe skidding of two-wheelers and auto-rickshaw axle damage during evening hours.",
+    landmark: "harinagar",
+    category: "Pothole",
+    zone: "Dense Residential Colony",
+    weather: "Clear Skies / Normal"
+  },
   pothole: {
     title: "Deep Pothole Right in front of Emergency Ambulance Bay",
     desc: "Huge pothole filled with rainwater right in front of the hospital emergency ramp. Ambulances are bouncing and slowing down severely.",
@@ -633,49 +648,67 @@ function renderAdminQueue(complaints) {
 
   container.innerHTML = complaints.map(ticket => {
     const isResolved = ticket.status === "RESOLVED";
+    const isBbmp = ticket.ticket_code && ticket.ticket_code.startsWith("BBMP-FMS");
     const badgeClass = ticket.priority_tier === "CRITICAL" ? "badge-critical" :
                        ticket.priority_tier === "HIGH" ? "badge-high" :
                        ticket.priority_tier === "MEDIUM" ? "badge-medium" : "badge-low";
+    const lat = parseFloat(ticket.lat || 12.9634);
+    const lng = parseFloat(ticket.lng || 77.5755);
 
     return `
       <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-white transition-all shadow-sm">
         <div class="flex items-start justify-between gap-2 mb-2">
           <div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <span class="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">#${ticket.ticket_code}</span>
+              ${isBbmp ? '<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">🏛️ BBMP Real Data</span>' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">📱 Citizen Report</span>'}
               <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">
                 ${ticket.priority_tier} (${ticket.priority_score})
               </span>
             </div>
             <h5 class="text-xs font-bold text-slate-900 mt-1">${ticket.title}</h5>
           </div>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200 shadow-sm">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200 shadow-sm shrink-0">
             ${ticket.status}
           </span>
         </div>
 
-        <div class="text-[11px] text-slate-600 space-y-0.5 mb-2.5">
-          <div>📍 ${ticket.address}</div>
+        <p class="text-[11px] text-slate-700 font-medium bg-slate-100/80 p-2.5 rounded-lg border border-slate-200 my-2 leading-relaxed">
+          ${ticket.description}
+        </p>
+
+        <div class="text-[11px] text-slate-600 space-y-1 mb-2.5">
+          <div>📍 <strong class="text-slate-800">${ticket.address}</strong></div>
+          <div class="flex items-center gap-3 text-[10px] text-slate-500 font-mono">
+            <span>GPS: ${lat.toFixed(6)}°N, ${lng.toFixed(6)}°E</span>
+            <span>Zone: ${ticket.zone_type}</span>
+          </div>
           <div>🏢 Dept: <strong class="text-slate-800">${ticket.department}</strong> | SLA: &lt; ${ticket.sla_hours}h</div>
           <div>👥 Reports Merged: <strong class="text-amber-700 font-bold">${ticket.report_count} citizens</strong></div>
         </div>
 
-        <div class="flex items-center gap-2 pt-2.5 border-t border-slate-200">
-          <button onclick="selectAndInspectTicket(${ticket.id})" class="px-2.5 py-1 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm flex items-center gap-1">
-            📸 Inspect Street & Defect
+        <div class="flex items-center gap-2 pt-2.5 border-t border-slate-200 flex-wrap">
+          <button onclick="selectAndInspectTicket(${ticket.id})" class="px-2.5 py-1 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm flex items-center gap-1 cursor-pointer">
+            📸 Inspect
           </button>
-          <button onclick="focusTicketOnMap(${ticket.lat}, ${ticket.lng}, true)" class="px-2.5 py-1 text-[11px] font-bold bg-cyan-50 hover:bg-cyan-100 text-cyan-800 rounded border border-cyan-300 shadow-sm flex items-center gap-1">
-            🛰️ Satellite
+          <button onclick="openGoogleStreetView(${lat}, ${lng})" class="px-2.5 py-1 text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded shadow-sm flex items-center gap-1 cursor-pointer" title="Open Official Google Maps 360° Street View">
+            🌐 360° View ↗
+          </button>
+          <button onclick="openGoogleMapsPin(${lat}, ${lng})" class="px-2 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 shadow-sm flex items-center gap-1 cursor-pointer" title="Exact Pin in Google Maps">
+            📍 Pin ↗
+          </button>
+          <button onclick="focusTicketOnMap(${lat}, ${lng}, true)" class="px-2 py-1 text-[11px] font-bold bg-cyan-50 hover:bg-cyan-100 text-cyan-800 rounded border border-cyan-300 shadow-sm flex items-center gap-1 cursor-pointer">
+            🛰️ Sat
           </button>
           
           ${ticket.status !== 'IN_PROGRESS' && !isResolved ? `
-            <button onclick="dispatchCrew(${ticket.id})" class="px-3 py-1 text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold shadow-sm">
-              Dispatch Crew
+            <button onclick="dispatchCrew(${ticket.id})" class="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-900 text-white rounded font-bold shadow-sm cursor-pointer">
+              Dispatch
             </button>
           ` : ''}
 
-          <button onclick="openResolveModal(${ticket.id})" class="ml-auto px-3 py-1 text-[11px] ${isResolved ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} rounded font-bold shadow-sm">
-            ${isResolved ? '✔ View Audit' : 'Verify & Close'}
+          <button onclick="openResolveModal(${ticket.id})" class="ml-auto px-2.5 py-1 text-[11px] ${isResolved ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} rounded font-bold shadow-sm cursor-pointer">
+            ${isResolved ? '✔ View Proof' : 'Verify & Close'}
           </button>
         </div>
       </div>
@@ -690,11 +723,14 @@ function applyAdminFilters() {
   const dept = document.getElementById("filter-dept").value;
   const tier = document.getElementById("filter-tier").value;
   const status = document.getElementById("filter-status").value;
+  const source = document.getElementById("filter-source")?.value || "ALL";
 
   let filtered = allComplaints.filter(c => {
     if (dept !== "ALL" && c.department !== dept) return false;
     if (tier !== "ALL" && c.priority_tier !== tier) return false;
     if (status !== "ALL" && c.status !== status) return false;
+    if (source === "BBMP" && !c.ticket_code.startsWith("BBMP-FMS")) return false;
+    if (source === "CITIZEN" && c.ticket_code.startsWith("BBMP-FMS")) return false;
     return true;
   });
 
@@ -818,4 +854,14 @@ function selectAndInspectTicket(id) {
       focusTicketOnMap(ticket.lat, ticket.lng, false);
     }
   }
+}
+
+
+// Set Data Source Filter
+function setDataSourceFilter(source) {
+  const el = document.getElementById("filter-source");
+  if (el) {
+    el.value = source;
+  }
+  applyAdminFilters();
 }

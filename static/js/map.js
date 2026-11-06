@@ -14,7 +14,8 @@ function openGoogleStreetView(lat, lng) {
 function openGoogleMapsPin(lat, lng) {
   const latitude = parseFloat(lat || 12.9634);
   const longitude = parseFloat(lng || 77.5755);
-  const url = `https://maps.google.com/?q=${latitude},${longitude}&cbll=${latitude},${longitude}&layer=c`;
+  // Official Universal Google Maps Search Pin API
+  const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
   window.open(url, "_blank", "noopener,noreferrer");
 }
 /**
@@ -290,10 +291,12 @@ function switchStreetPhoto(angle) {
 
   if (!imgEl) return;
 
+  const ticket = currentInspectedTicket || (window.allComplaints ? window.allComplaints[0] : null);
+  const primaryImg = (ticket && ticket.image_url) ? ticket.image_url : "/uploads/streetview_pothole_pin.jpg";
+  const surroundingsImg = (ticket && ticket.streetview_image_url) ? ticket.streetview_image_url : "/uploads/streetview_pothole_surroundings.jpg";
+
   if (angle === 1) {
-    imgEl.src = (currentInspectedTicket && currentInspectedTicket.image_url) 
-      ? currentInspectedTicket.image_url 
-      : "/uploads/streetview_pothole_pin.jpg";
+    imgEl.src = primaryImg;
     if (btn1) {
       btn1.style.background = "rgba(37,99,235,0.9)";
       btn1.style.color = "white";
@@ -311,12 +314,10 @@ function switchStreetPhoto(angle) {
       landmarkCallout.style.display = "block";
       landmarkCallout.style.top = "22%";
       landmarkCallout.style.left = "28%";
-      landmarkCallout.innerText = "📍 Victoria Hospital Emergency Gate";
+      landmarkCallout.innerText = "📍 " + (ticket && ticket.address ? ticket.address.split(",")[0] : "Victoria Hospital Gate");
     }
   } else {
-    imgEl.src = (currentInspectedTicket && currentInspectedTicket.streetview_image_url)
-      ? currentInspectedTicket.streetview_image_url
-      : "/uploads/streetview_pothole_surroundings.jpg";
+    imgEl.src = surroundingsImg;
     if (btn2) {
       btn2.style.background = "rgba(37,99,235,0.9)";
       btn2.style.color = "white";
@@ -334,15 +335,13 @@ function switchStreetPhoto(angle) {
       landmarkCallout.style.display = "block";
       landmarkCallout.style.top = "15%";
       landmarkCallout.style.left = "20%";
-      landmarkCallout.innerText = "🚖 Auto-Rickshaw Stand & Corner Houses";
+      landmarkCallout.innerText = "🔄 Surroundings: " + (ticket && ticket.address ? ticket.address.split(",")[0] : "Site Area");
     }
   }
-
-  resetStreetViewZoom();
 }
 
 /**
- * Inspect a specific complaint ticket in the Visual Inspection Hub
+ * Inspect Ticket Visuals in the Top Half Panel
  */
 function inspectTicketVisuals(ticket) {
   if (!ticket) return;
@@ -350,10 +349,12 @@ function inspectTicketVisuals(ticket) {
 
   const lat = parseFloat(ticket.lat || 12.9634);
   const lng = parseFloat(ticket.lng || 77.5755);
+  const isBbmp = ticket.ticket_code && ticket.ticket_code.startsWith("BBMP-FMS");
 
   // Update Header Info
   const codeEl = document.getElementById("inspector-ticket-code");
   const tierEl = document.getElementById("inspector-ticket-tier");
+  const bbmpBadge = document.getElementById("inspector-bbmp-badge");
   const titleEl = document.getElementById("inspector-ticket-title");
   const coordsEl = document.getElementById("inspector-coords");
   const gmapsLink = document.getElementById("inspector-gmaps-link");
@@ -365,14 +366,19 @@ function inspectTicketVisuals(ticket) {
     tierEl.className = ticket.priority_tier === "CRITICAL" ? "badge-critical" :
                        ticket.priority_tier === "HIGH" ? "badge-high" : "badge-medium";
   }
+  if (bbmpBadge) {
+    bbmpBadge.style.display = isBbmp ? "inline-block" : "none";
+  }
   if (titleEl) titleEl.innerText = ticket.title;
-  if (coordsEl) coordsEl.innerText = `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  if (coordsEl) coordsEl.innerText = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
-  // Google Maps Links (Real 360 Street View link with coordinates)
+  // Google Maps Links (Official Universal 360 Street View API)
   if (gmapsLink) {
     gmapsLink.href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
-    const pinLink = document.getElementById("inspector-pin-link");
-    if (pinLink) pinLink.href = `https://maps.google.com/?q=${lat},${lng}&cbll=${lat},${lng}&layer=c`;
+  }
+  const pinLink = document.getElementById("inspector-pin-link");
+  if (pinLink) {
+    pinLink.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
   }
   if (navLink) {
     navLink.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
@@ -386,27 +392,25 @@ function inspectTicketVisuals(ticket) {
   const switcher = document.getElementById("inspector-photo-switcher");
 
   if (defectLabel) {
-    defectLabel.innerText = `${(ticket.category || "DEFECT").toUpperCase()} LOCATED`;
+    defectLabel.innerText = ticket.title.includes("Pothole") ? "POTHOLE DEFECT" : `${(ticket.category || "DEFECT").toUpperCase()} LOCATED`;
   }
 
   if (landmarkCallout) {
-    landmarkCallout.innerText = `📍 ${ticket.address.split(",")[0]}`;
+    landmarkCallout.innerText = `📍 ${ticket.address ? ticket.address.split(",")[0] : ticket.title}`;
   }
 
   // Set images
   let primaryImg = ticket.image_url || "/uploads/streetview_pothole_pin.jpg";
-  if (ticket.ticket_code === "CP-BLR-8012") {
-    primaryImg = "/uploads/streetview_pothole_pin.jpg";
-    if (switcher) switcher.style.display = "flex";
-  } else {
-    if (switcher) switcher.style.display = "none";
+  const hasMultipleViews = Boolean(ticket.streetview_image_url && ticket.streetview_image_url !== ticket.image_url);
+  if (switcher) {
+    switcher.style.display = (hasMultipleViews || ticket.ticket_code === "CP-BLR-8012" || ticket.ticket_code === "BBMP-FMS-2108") ? "flex" : "none";
   }
 
   if (streetImg) streetImg.src = primaryImg;
 
   // AI Diagnostic image
   if (scanImg) {
-    if (ticket.ticket_code === "CP-BLR-8012") {
+    if (ticket.ticket_code === "CP-BLR-8012" || ticket.ticket_code === "BBMP-FMS-2108") {
       scanImg.src = "/uploads/ai_scan_streetview_pothole_pin.jpg";
     } else {
       const baseName = primaryImg.split("/").pop();
@@ -425,6 +429,7 @@ function inspectTicketVisuals(ticket) {
     }
   }
 }
+
 
 function updateStreetView(lat, lng) {
   // Find ticket matching lat/lng
@@ -553,46 +558,52 @@ function renderMapMarkers(complaints) {
     const marker = L.marker([lat, lng], { icon: icon });
 
     // Clean High-Contrast Popup Content
+    const isBbmp = ticket.ticket_code.startsWith("BBMP-FMS");
     const popupHtml = `
-      <div style="font-family: inherit; width: 250px; font-size: 12px; color: #0f172a; padding: 2px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <strong style="color: #2563eb; font-size: 12px;">#${ticket.ticket_code}</strong>
+      <div style="font-family: inherit; width: 270px; font-size: 12px; color: #0f172a; padding: 2px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <strong style="color: #2563eb; font-size: 12px;">#${ticket.ticket_code}</strong>
+            ${isBbmp ? '<span style="font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: #fef3c7; color: #92400e; border: 1px solid #fcd34d;">🏛️ BBMP Real Data</span>' : '<span style="font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">📱 Citizen</span>'}
+          </div>
           <span style="font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 6px; background: ${ticket.priority_tier === 'CRITICAL' ? '#fee2e2; color: #dc2626; border: 1px solid #fca5a5;' : ticket.priority_tier === 'HIGH' ? '#ffedd5; color: #ea580c; border: 1px solid #fdba74;' : '#fef9c3; color: #ca8a04; border: 1px solid #fde047;'}">
             ${ticket.priority_tier} (${ticket.priority_score})
           </span>
         </div>
         
-        <div style="position: relative; width: 100%; height: 100px; border-radius: 6px; overflow: hidden; margin-bottom: 6px; border: 1px solid #cbd5e1; background:#0f172a;">
+        <div style="position: relative; width: 100%; height: 105px; border-radius: 6px; overflow: hidden; margin-bottom: 6px; border: 1px solid #cbd5e1; background:#0f172a;">
           <img src="${ticket.image_url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Defect">
-          <div style="position: absolute; bottom: 4px; right: 4px; background: rgba(15,23,42,0.85); color: white; font-size: 9px; padding: 2px 6px; border-radius: 4px;">
-            GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}
+          <div style="position: absolute; bottom: 4px; right: 4px; background: rgba(15,23,42,0.85); color: white; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-family: monospace;">
+            GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}
           </div>
         </div>
 
         <p style="font-weight: 700; font-size: 12px; margin: 4px 0 3px 0; color: #0f172a; line-height: 1.3;">${ticket.title}</p>
-        <p style="color: #64748b; font-size: 11px; margin-bottom: 6px;">📍 ${ticket.address}</p>
+        <p style="font-size: 11px; color: #475569; margin: 3px 0 5px 0; line-height: 1.3; background: #f8fafc; padding: 4px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
+          ${ticket.description}
+        </p>
+        <p style="color: #64748b; font-size: 11px; margin-bottom: 4px;">📍 ${ticket.address}</p>
         <div style="font-size: 11px; margin-bottom: 8px; color: #334155; line-height: 1.4;">
           🏢 <strong>${ticket.department}</strong><br>
           👥 <strong style="color: #ea580c;">${ticket.report_count}</strong> Citizen Reports Merged
         </div>
 
-        <div style="display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap;">
-          <button onclick="updateStreetView(${lat}, ${lng})" style="flex: 1; background: #2563eb; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:75px;">
+        <div style="display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap;">
+          <button onclick="selectAndInspectTicket(${ticket.id})" style="flex: 1; background: #2563eb; color: white; font-weight: bold; border: none; padding: 6px 4px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:70px;">
             📸 Inspect
           </button>
-          <button onclick="openGoogleStreetView(${lat}, ${lng})" style="flex: 1; background: #4f46e5; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:75px;">
-            🌐 360° Street View
+          <button onclick="openGoogleStreetView(${lat}, ${lng})" style="flex: 1; background: #4f46e5; color: white; font-weight: bold; border: none; padding: 6px 4px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:85px;" title="Official Google Maps 360° Street View">
+            🌐 360° View ↗
           </button>
-          <button onclick="zoomSatellite(${lat}, ${lng})" style="flex: 1; background: #0891b2; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:65px;">
+          <button onclick="openGoogleMapsPin(${lat}, ${lng})" style="flex: 1; background: #0f172a; color: white; font-weight: bold; border: none; padding: 6px 4px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:55px;">
+            📍 Pin ↗
+          </button>
+          <button onclick="zoomSatellite(${lat}, ${lng})" style="flex: 1; background: #0891b2; color: white; font-weight: bold; border: none; padding: 6px 4px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:65px;">
             🛰️ Satellite
-          </button>
-          <button onclick="openResolveModal(${ticket.id})" style="flex: 1; background: #059669; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:75px;">
-            ${ticket.status === 'RESOLVED' ? '✔ View Proof' : 'Resolve'}
           </button>
         </div>
       </div>
     `;
-
     marker.bindPopup(popupHtml);
     marker.on("popupopen", function() {
       updateStreetView(lat, lng);

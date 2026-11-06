@@ -101,6 +101,7 @@
           <span class="text-xs text-white/90 font-semibold">Quick Presets:</span>
           <button onclick="loadSampleCase('pothole')" class="px-2.5 py-1 text-xs bg-white text-blue-700 font-bold rounded-lg shadow-sm hover:bg-blue-50 transition-all">Pothole near Hospital</button>
           <button onclick="loadSampleCase('wire')" class="px-2.5 py-1 text-xs bg-white text-amber-700 font-bold rounded-lg shadow-sm hover:bg-amber-50 transition-all">Live Wire near School</button>
+          <button onclick="loadSampleCase('bbmp_pothole')" class="px-2.5 py-1 text-xs bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold rounded-lg shadow-sm transition-all">🏛️ BBMP Harinagar Pothole</button>
           <button onclick="loadSampleCase('leak')" class="px-2.5 py-1 text-xs bg-white text-cyan-700 font-bold rounded-lg shadow-sm hover:bg-cyan-50 transition-all">Burst Pipe</button>
         </div>
       </div>
@@ -355,6 +356,37 @@
     <!-- ============================================================== -->
     <section id="tab-admin-content" class="hidden flex flex-col gap-6">
       
+      <!-- Real BBMP Fix My Street OpenCivic Data Banner -->
+      <div class="rounded-2xl p-4 bg-gradient-to-r from-amber-500/10 via-blue-500/10 to-indigo-500/10 border border-amber-300/80 backdrop-blur-sm shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-xl shadow-md shrink-0">
+            🏛️
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-sm font-extrabold text-slate-900">BBMP "Fix My Street" Real OpenCivic Dataset</h3>
+              <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                10 Verified Bengaluru Sites
+              </span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300">
+                OpenCity.in Geotagged
+              </span>
+            </div>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              Official municipal grievance records across Bengaluru: Harinagar (Ward 196), J.P. Nagar 8th Phase, Silk Board Transit Flyover, Koramangala Forum Mall, Indiranagar CMH, ITPL Whitefield, and Hebbal Flyover. Every site includes exact GPS coordinates, real defect dimensions, and live 360° Google Street View surveys.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="setDataSourceFilter('BBMP')" class="px-3.5 py-2 text-xs font-bold rounded-xl text-white bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer">
+            🏛️ Filter BBMP Real Data (10)
+          </button>
+          <button onclick="setDataSourceFilter('ALL')" class="px-3.5 py-2 text-xs font-bold rounded-xl text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-sm transition-all cursor-pointer">
+            Show All Data (20)
+          </button>
+        </div>
+      </div>
+      
       <!-- Operations Toolbar -->
       <div class="card-glass p-4 flex flex-wrap items-center justify-between gap-4">
         <div class="flex flex-wrap items-center gap-3">
@@ -380,6 +412,16 @@
               <option value="HIGH">🟠 High</option>
               <option value="MEDIUM">🟡 Medium</option>
               <option value="LOW">🟢 Low</option>
+            </select>
+          </div>
+
+          <!-- Data Source Filter -->
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-bold text-slate-700">Data Source:</label>
+            <select id="filter-source" onchange="applyAdminFilters()" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 shadow-sm">
+              <option value="ALL">All City Data (20 Defect Sites)</option>
+              <option value="BBMP">🏛️ BBMP Fix My Street (Real Data)</option>
+              <option value="CITIZEN">📱 Citizen Live Reports</option>
             </select>
           </div>
 
@@ -426,6 +468,7 @@
                     <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#ef4444; box-shadow:0 0 10px #ef4444;" class="animate-ping"></span>
                     <strong id="inspector-ticket-code" style="color:#ffffff; font-size:12px; font-weight:800; font-family:monospace;">#CP-BLR-8012</strong>
                     <span id="inspector-ticket-tier" style="font-size:10px; font-weight:800; padding:2px 7px; border-radius:6px; background:#fef2f2; color:#dc2626;">CRITICAL (96)</span>
+                    <span id="inspector-bbmp-badge" style="display:none; font-size:10px; font-weight:800; padding:2px 7px; border-radius:6px; background:#fef3c7; color:#92400e; border:1px solid #fcd34d;">🏛️ BBMP Real Data</span>
                     <span id="inspector-ticket-title" style="color:#94a3b8; font-size:11px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" class="hidden sm:inline">Victoria Hospital Emergency Gate</span>
                   </div>
 
