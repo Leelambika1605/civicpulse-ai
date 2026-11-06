@@ -1,3 +1,22 @@
+
+/**
+ * Official Google Maps Universal 360 Street View Launcher
+ * Works across desktop browsers and mobile Google Maps apps
+ */
+function openGoogleStreetView(lat, lng) {
+  const latitude = parseFloat(lat || 12.9634);
+  const longitude = parseFloat(lng || 77.5755);
+  // Official Google Maps URLs API for 360 Street View
+  const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${latitude},${longitude}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+function openGoogleMapsPin(lat, lng) {
+  const latitude = parseFloat(lat || 12.9634);
+  const longitude = parseFloat(lng || 77.5755);
+  const url = `https://maps.google.com/?q=${latitude},${longitude}&cbll=${latitude},${longitude}&layer=c`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
 /**
  * Geospatial GIS Map Engine & Visual Inspection Hub using Leaflet.js
  * Combines:
@@ -351,7 +370,9 @@ function inspectTicketVisuals(ticket) {
 
   // Google Maps Links (Real 360 Street View link with coordinates)
   if (gmapsLink) {
-    gmapsLink.href = `https://www.google.com/maps/@${lat},${lng},3a,75y,90t/data=!3m6!1e1`;
+    gmapsLink.href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+    const pinLink = document.getElementById("inspector-pin-link");
+    if (pinLink) pinLink.href = `https://maps.google.com/?q=${lat},${lng}&cbll=${lat},${lng}&layer=c`;
   }
   if (navLink) {
     navLink.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
@@ -433,7 +454,9 @@ function updateSatelliteCloseup(lat, lng) {
   }
   const gmLink = document.getElementById("inspector-gmaps-link");
   if (gmLink) {
-    gmLink.href = `https://www.google.com/maps/@${lat},${lng},3a,75y,90t/data=!3m6!1e1`;
+    gmLink.href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+  const pinLink = document.getElementById("inspector-pin-link");
+  if (pinLink) pinLink.href = `https://maps.google.com/?q=${lat},${lng}&cbll=${lat},${lng}&layer=c`;
   }
 }
 
@@ -554,14 +577,17 @@ function renderMapMarkers(complaints) {
         </div>
 
         <div style="display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap;">
-          <button onclick="updateStreetView(${lat}, ${lng})" style="flex: 1; background: #2563eb; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
-            📸 Inspect Street
+          <button onclick="updateStreetView(${lat}, ${lng})" style="flex: 1; background: #2563eb; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:75px;">
+            📸 Inspect
           </button>
-          <button onclick="zoomSatellite(${lat}, ${lng})" style="flex: 1; background: #0891b2; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
+          <button onclick="openGoogleStreetView(${lat}, ${lng})" style="flex: 1; background: #4f46e5; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:75px;">
+            🌐 360° Street View
+          </button>
+          <button onclick="zoomSatellite(${lat}, ${lng})" style="flex: 1; background: #0891b2; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:65px;">
             🛰️ Satellite
           </button>
-          <button onclick="openResolveModal(${ticket.id})" style="flex: 1; background: #059669; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
-            ${ticket.status === 'RESOLVED' ? '✔ View Proof' : 'Verify & Resolve'}
+          <button onclick="openResolveModal(${ticket.id})" style="flex: 1; background: #059669; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:75px;">
+            ${ticket.status === 'RESOLVED' ? '✔ View Proof' : 'Resolve'}
           </button>
         </div>
       </div>

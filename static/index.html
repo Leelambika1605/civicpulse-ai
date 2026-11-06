@@ -495,15 +495,19 @@
 
                 <!-- BOTTOM ACTION BAR: Google Maps 360 link + Navigation + Coords -->
                 <div style="background:rgba(15,23,42,0.96); backdrop-filter:blur(8px); border-top:1px solid rgba(255,255,255,0.08); padding:6px 12px; display:flex; align-items:center; justify-content:space-between; z-index:20; flex-shrink:0; gap:8px; flex-wrap:wrap;">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <a id="inspector-gmaps-link" href="https://www.google.com/maps/@12.9634,77.5755,3a,75y,90t/data=!3m6!1e1" target="_blank"
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <a id="inspector-gmaps-link" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=12.9634,77.5755" target="_blank" rel="noopener noreferrer"
                       style="background:linear-gradient(135deg,#2563eb,#3b82f6); color:#ffffff; font-size:11px; font-weight:800; padding:5px 12px; border-radius:8px; text-decoration:none; display:flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(37,99,235,0.3);">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                      Open Live 360° in Google Maps ↗
+                      🌐 Open Live 360° Street View ↗
                     </a>
-                    <a id="inspector-nav-link" href="https://www.google.com/maps/dir/?api=1&destination=12.9634,77.5755" target="_blank"
+                    <a id="inspector-pin-link" href="https://maps.google.com/?q=12.9634,77.5755&cbll=12.9634,77.5755&layer=c" target="_blank" rel="noopener noreferrer"
+                      style="background:rgba(255,255,255,0.12); color:#e2e8f0; font-size:11px; font-weight:700; padding:5px 10px; border-radius:8px; text-decoration:none; border:1px solid rgba(255,255,255,0.18); display:flex; align-items:center; gap:4px;">
+                      📍 Exact Pin ↗
+                    </a>
+                    <a id="inspector-nav-link" href="https://www.google.com/maps/dir/?api=1&destination=12.9634,77.5755" target="_blank" rel="noopener noreferrer"
                       style="background:rgba(255,255,255,0.1); color:#e2e8f0; font-size:11px; font-weight:700; padding:5px 10px; border-radius:8px; text-decoration:none; border:1px solid rgba(255,255,255,0.15); display:flex; align-items:center; gap:4px;">
-                      🧭 Navigate Crew ↗
+                      🧭 Navigate ↗
                     </a>
                   </div>
 
