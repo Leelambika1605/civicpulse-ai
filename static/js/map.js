@@ -144,11 +144,14 @@ function renderMapMarkers(complaints) {
           👥 <strong style="color: #ea580c;">${ticket.report_count}</strong> Citizen Reports Merged
         </div>
 
-        <div style="display: flex; gap: 5px; margin-top: 6px;">
-          <button onclick="zoomSatellite(${lat}, ${lng})" style="flex: 1; background: #0891b2; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer;">
-            🛰️ Satellite Zoom
+        <div style="display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap;">
+          <button onclick="updateStreetView(${lat}, ${lng})" style="flex: 1; background: #7c3aed; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
+            🔍 Street View
           </button>
-          <button onclick="openResolveModal(${ticket.id})" style="flex: 1; background: #2563eb; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer;">
+          <button onclick="zoomSatellite(${lat}, ${lng})" style="flex: 1; background: #0891b2; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
+            🛰️ Satellite
+          </button>
+          <button onclick="openResolveModal(${ticket.id})" style="flex: 1; background: #2563eb; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
             ${ticket.status === 'RESOLVED' ? '✔ View Proof' : 'Verify & Resolve'}
           </button>
         </div>
@@ -156,6 +159,10 @@ function renderMapMarkers(complaints) {
     `;
 
     marker.bindPopup(popupHtml);
+    // When this marker's popup opens, sync the Street View panel
+    marker.on("popupopen", function() {
+      updateStreetView(lat, lng);
+    });
     markerLayerGroup.addLayer(marker);
 
     // Draw 65-meter De-duplication Buffer circle around active tickets
@@ -183,6 +190,22 @@ function zoomSatellite(lat, lng) {
   cityMap.setView([lat, lng], 18, { animate: true });
 }
 
+/**
+ * updateStreetView — syncs the top Street View iframe to a lat/lng.
+ * Uses the Google Maps embed URL for Street View (no API key required).
+ */
+function updateStreetView(lat, lng) {
+  const iframe = document.getElementById("street-view-iframe");
+  const coordsEl = document.getElementById("sv-coords");
+  if (iframe) {
+    // Google Maps Street View embed: @lat,lng,3a = street-level, 75y = FOV, 0h = heading, 90t = tilt
+    iframe.src = `https://www.google.com/maps/@${lat},${lng},3a,75y,0h,90t/data=!3m6!1e1`;
+  }
+  if (coordsEl) {
+    coordsEl.textContent = `📍 ${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`;
+  }
+}
+
 function focusTicketOnMap(lat, lng, enableSatellite = false) {
   switchTab("admin");
   setTimeout(() => {
@@ -192,6 +215,8 @@ function focusTicketOnMap(lat, lng, enableSatellite = false) {
     }
     const zoomLevel = enableSatellite ? 18 : 16;
     cityMap.setView([lat, lng], zoomLevel, { animate: true });
+    // Also update the Street View panel to this location
+    updateStreetView(lat, lng);
   }, 200);
 }
 
