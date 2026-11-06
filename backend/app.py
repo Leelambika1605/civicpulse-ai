@@ -233,7 +233,8 @@ class SmartCityRequestHandler(SimpleHTTPRequestHandler):
                 "report_count": 1,
                 "citizen_name": citizen_name,
                 "citizen_phone": citizen_phone,
-                "weather_condition": weather
+                "weather_condition": weather,
+                "streetview_image_url": body.get("streetview_image_url", image_url)
             }
 
             complaint_id = add_complaint(new_record)

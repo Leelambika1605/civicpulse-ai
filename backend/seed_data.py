@@ -93,7 +93,8 @@ SAMPLE_COMPLAINTS = [
         "lng": 77.5755,
         "address": "Opposite Victoria Hospital Emergency Gate, Kalasipalya, Bengaluru",
         "zone_type": "Hospital Zone",
-        "image_file": "pothole_hospital.png",
+        "image_file": "streetview_pothole_pin.jpg",
+        "streetview_file": "streetview_pothole_surroundings.jpg",
         "after_image_file": "pothole_hospital_repaired.png",
         "severity_score": 9.4,
         "urgency_score": 9.8,
@@ -296,6 +297,10 @@ def seed_database():
 
         item["image_url"] = img_url
         item["after_image_url"] = after_url
+        if item.get("streetview_file"):
+            item["streetview_image_url"] = f"/uploads/{item['streetview_file']}"
+        else:
+            item["streetview_image_url"] = img_url
         add_complaint(item)
 
     print(f"Successfully seeded {len(SAMPLE_COMPLAINTS)} complaints!")

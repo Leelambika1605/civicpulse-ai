@@ -59,16 +59,21 @@
       </div>
 
       <!-- Navigation Tabs -->
-      <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-        <button id="nav-citizen" onclick="switchTab('citizen')" class="px-4 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white transition-all shadow-md shadow-blue-500/20">
-          <i data-lucide="user" class="w-3.5 h-3.5 inline mr-1"></i> Citizen Portal
-        </button>
-        <button id="nav-admin" onclick="switchTab('admin')" class="px-4 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all">
-          <i data-lucide="shield-alert" class="w-3.5 h-3.5 inline mr-1"></i> Command Center & GIS
-        </button>
-        <button id="nav-analytics" onclick="switchTab('analytics')" class="px-4 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all">
-          <i data-lucide="bar-chart-3" class="w-3.5 h-3.5 inline mr-1"></i> City Analytics
-        </button>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <button id="nav-citizen" onclick="switchTab('citizen')" class="px-4 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white transition-all shadow-md shadow-blue-500/20">
+            <i data-lucide="user" class="w-3.5 h-3.5 inline mr-1"></i> Citizen Portal
+          </button>
+          <button id="nav-admin" onclick="switchTab('admin')" class="px-4 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+            <i data-lucide="shield-alert" class="w-3.5 h-3.5 inline mr-1"></i> Command Center & GIS
+          </button>
+          <button id="nav-analytics" onclick="switchTab('analytics')" class="px-4 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+            <i data-lucide="bar-chart-3" class="w-3.5 h-3.5 inline mr-1"></i> City Analytics
+          </button>
+        </div>
+        <a href="/demo.html" target="_blank" class="px-3.5 py-2 text-xs font-extrabold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 transition-all shadow-md shadow-indigo-500/20 flex items-center gap-1.5">
+          <i data-lucide="presentation" class="w-3.5 h-3.5"></i> Demo Slides ↗
+        </a>
       </div>
     </div>
   </header>
@@ -412,29 +417,104 @@
             <!-- Split Map Container -->
             <div id="split-map-container" style="border-radius:0.75rem; overflow:hidden; border:1px solid #e2e8f0; display:flex; flex-direction:column; height:620px; box-shadow:0 4px 24px rgba(0,0,0,0.10);">
 
-              <!-- TOP HALF: High-Res Satellite Close-Up (Esri) -->
-              <div id="satellite-closeup-panel" style="height:50%; position:relative; flex-shrink:0; background:#0f172a;">
-                <div id="satellite-closeup-map" style="width:100%; height:100%;"></div>
+              <!-- TOP HALF: Visual Inspection Hub (Street Surroundings + Satellite + AI Scan) -->
+              <div id="visual-inspection-hub" style="height:54%; position:relative; flex-shrink:0; background:#0b1120; overflow:hidden; display:flex; flex-direction:column;">
+                
+                <!-- TOP HEADER BAR: Ticket Code, Tier, Mode Switcher Tabs -->
+                <div style="background:rgba(15,23,42,0.96); backdrop-filter:blur(8px); border-bottom:1px solid rgba(255,255,255,0.08); padding:6px 12px; display:flex; align-items:center; justify-content:space-between; z-index:20; flex-shrink:0; gap:8px;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#ef4444; box-shadow:0 0 10px #ef4444;" class="animate-ping"></span>
+                    <strong id="inspector-ticket-code" style="color:#ffffff; font-size:12px; font-weight:800; font-family:monospace;">#CP-BLR-8012</strong>
+                    <span id="inspector-ticket-tier" style="font-size:10px; font-weight:800; padding:2px 7px; border-radius:6px; background:#fef2f2; color:#dc2626;">CRITICAL (96)</span>
+                    <span id="inspector-ticket-title" style="color:#94a3b8; font-size:11px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" class="hidden sm:inline">Victoria Hospital Emergency Gate</span>
+                  </div>
 
-                <!-- Badge: Top-left label -->
-                <div style="position:absolute; top:10px; left:10px; z-index:1000; background:rgba(255,255,255,0.95); padding:4px 11px; border-radius:20px; font-size:11px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:6px; box-shadow:0 2px 10px rgba(0,0,0,0.18); border:1px solid #e2e8f0; pointer-events:none;">
-                  <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,0.25);"></span>
-                  🛰️ Satellite Close-Up — Defect Site
+                  <!-- Mode Switcher Tabs -->
+                  <div style="display:flex; align-items:center; background:rgba(255,255,255,0.08); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.12); margin-left:auto;">
+                    <button id="tab-mode-streetview" onclick="switchInspectionMode('streetview')" style="padding:3px 9px; font-size:11px; font-weight:700; border-radius:6px; background:#2563eb; color:#ffffff; border:none; cursor:pointer; display:flex; align-items:center; gap:4px;">
+                      📸 Street & Surroundings
+                    </button>
+                    <button id="tab-mode-satellite" onclick="switchInspectionMode('satellite')" style="padding:3px 9px; font-size:11px; font-weight:600; border-radius:6px; background:transparent; color:#94a3b8; border:none; cursor:pointer; display:flex; align-items:center; gap:4px;">
+                      🛰️ Satellite
+                    </button>
+                    <button id="tab-mode-scan" onclick="switchInspectionMode('scan')" style="padding:3px 9px; font-size:11px; font-weight:600; border-radius:6px; background:transparent; color:#94a3b8; border:none; cursor:pointer; display:flex; align-items:center; gap:4px;">
+                      🔬 AI Defect Scan
+                    </button>
+                  </div>
                 </div>
 
-                <!-- Coords badge: bottom-right -->
-                <div id="sv-coords" style="position:absolute; bottom:10px; right:10px; z-index:1000; background:rgba(15,23,42,0.82); color:#e2e8f0; font-size:10px; font-weight:700; padding:4px 10px; border-radius:12px; pointer-events:none; letter-spacing:0.04em;">
-                  📍 12.9716, 77.5946
+                <!-- MAIN VIEWPORT CONTAINER -->
+                <div id="inspector-main-viewport" style="position:relative; flex:1; width:100%; overflow:hidden;">
+                  
+                  <!-- 1. Interactive Street & Surroundings Pan/Zoom View -->
+                  <div id="streetview-viewport-panel" style="position:absolute; inset:0; width:100%; height:100%; overflow:hidden; cursor:grab; background:#050811; display:flex; align-items:center; justify-content:center;">
+                    <div id="streetview-pan-layer" style="position:absolute; transform-origin:center center; transition:transform 0.05s ease-out; user-select:none; display:flex; align-items:center; justify-content:center;">
+                      <img id="inspector-street-img" src="/uploads/streetview_pothole_pin.jpg" alt="Street Defect" style="max-height:360px; max-width:none; object-fit:contain; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.8); pointer-events:none;" draggable="false">
+                      
+                      <!-- Overlay: Location Pin on Defect -->
+                      <div id="inspector-defect-marker" style="position:absolute; top:44%; left:58%; transform:translate(-50%, -100%); pointer-events:none; display:flex; flex-direction:column; align-items:center;">
+                        <div style="background:rgba(220,38,38,0.95); color:white; font-size:10px; font-weight:800; padding:3px 8px; border-radius:12px; box-shadow:0 4px 12px rgba(220,38,38,0.5); border:1px solid #ffffff; white-space:nowrap; display:flex; align-items:center; gap:4px;">
+                          <span>⚠️</span> <span id="marker-defect-label">POTHOLE DEFECT</span>
+                        </div>
+                        <div style="width:14px; height:14px; background:#ef4444; border:3px solid white; border-radius:50%; box-shadow:0 0 12px #ef4444; margin-top:2px;" class="animate-bounce"></div>
+                      </div>
+
+                      <!-- Overlay: Landmark Reference Anchor -->
+                      <div id="inspector-landmark-callout" style="position:absolute; top:22%; left:28%; pointer-events:none; background:rgba(15,23,42,0.90); backdrop-filter:blur(6px); color:#38bdf8; font-size:10px; font-weight:700; padding:3px 9px; border-radius:8px; border:1px solid rgba(56,189,248,0.4); box-shadow:0 4px 14px rgba(0,0,0,0.4); white-space:nowrap;">
+                        📍 Victoria Hospital Emergency Gate
+                      </div>
+                    </div>
+
+                    <!-- On-Screen Pan/Zoom Floating Controls -->
+                    <div style="position:absolute; top:10px; right:10px; z-index:30; display:flex; flex-direction:column; gap:5px; background:rgba(15,23,42,0.85); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:4px;">
+                      <button onclick="zoomStreetView(0.25)" title="Zoom In" style="width:28px; height:28px; background:rgba(255,255,255,0.1); color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">+</button>
+                      <button onclick="zoomStreetView(-0.25)" title="Zoom Out" style="width:28px; height:28px; background:rgba(255,255,255,0.1); color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">−</button>
+                      <button onclick="resetStreetViewZoom()" title="Reset View" style="width:28px; height:28px; background:rgba(255,255,255,0.1); color:white; border:none; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;">↺</button>
+                    </div>
+
+                    <!-- Alternate Photo Switcher (Angle 1 vs Angle 2) -->
+                    <div id="inspector-photo-switcher" style="position:absolute; top:10px; left:10px; z-index:30; display:flex; gap:6px;">
+                      <button id="btn-photo-1" onclick="switchStreetPhoto(1)" style="background:rgba(37,99,235,0.9); color:white; font-size:10px; font-weight:700; padding:4px 9px; border-radius:6px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;">
+                        📍 View 1: Pothole & Pin
+                      </button>
+                      <button id="btn-photo-2" onclick="switchStreetPhoto(2)" style="background:rgba(15,23,42,0.8); color:#cbd5e1; font-size:10px; font-weight:700; padding:4px 9px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); cursor:pointer;">
+                        🔄 View 2: Street Surroundings
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 2. Esri Satellite Map View -->
+                  <div id="satellite-closeup-map" style="position:absolute; inset:0; width:100%; height:100%; display:none;"></div>
+
+                  <!-- 3. AI Diagnostic Scan View -->
+                  <div id="ai-scan-viewport-panel" style="position:absolute; inset:0; width:100%; height:100%; display:none; background:#050811; align-items:center; justify-content:center; overflow:hidden;">
+                    <img id="inspector-ai-scan-img" src="/uploads/ai_scan_streetview_pothole_pin.jpg" alt="AI Scan" style="max-height:100%; max-width:100%; object-fit:contain;">
+                  </div>
+
                 </div>
 
-                <!-- Google Maps link badge -->
-                <div id="gmaps-link-badge" style="position:absolute; bottom:10px; left:10px; z-index:1000;">
-                  <a id="gmaps-link" href="https://www.google.com/maps/@12.9716,77.5946,18z" target="_blank"
-                    style="background:rgba(255,255,255,0.93); color:#1d4ed8; font-size:10px; font-weight:700; padding:4px 10px; border-radius:12px; text-decoration:none; display:flex; align-items:center; gap:4px; border:1px solid #bfdbfe; box-shadow:0 2px 8px rgba(0,0,0,0.12);">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                    Open in Google Maps ↗
-                  </a>
+                <!-- BOTTOM ACTION BAR: Google Maps 360 link + Navigation + Coords -->
+                <div style="background:rgba(15,23,42,0.96); backdrop-filter:blur(8px); border-top:1px solid rgba(255,255,255,0.08); padding:6px 12px; display:flex; align-items:center; justify-content:space-between; z-index:20; flex-shrink:0; gap:8px; flex-wrap:wrap;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <a id="inspector-gmaps-link" href="https://www.google.com/maps/@12.9634,77.5755,3a,75y,90t/data=!3m6!1e1" target="_blank"
+                      style="background:linear-gradient(135deg,#2563eb,#3b82f6); color:#ffffff; font-size:11px; font-weight:800; padding:5px 12px; border-radius:8px; text-decoration:none; display:flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(37,99,235,0.3);">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                      Open Live 360° in Google Maps ↗
+                    </a>
+                    <a id="inspector-nav-link" href="https://www.google.com/maps/dir/?api=1&destination=12.9634,77.5755" target="_blank"
+                      style="background:rgba(255,255,255,0.1); color:#e2e8f0; font-size:11px; font-weight:700; padding:5px 10px; border-radius:8px; text-decoration:none; border:1px solid rgba(255,255,255,0.15); display:flex; align-items:center; gap:4px;">
+                      🧭 Navigate Crew ↗
+                    </a>
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:10px; font-size:11px; color:#94a3b8; font-weight:600;">
+                    <span class="hidden sm:inline" style="color:#64748b;">🖱️ Drag to pan &bull; Scroll to zoom</span>
+                    <span id="inspector-coords" style="font-family:monospace; color:#38bdf8; font-weight:700; background:rgba(56,189,248,0.1); padding:2px 8px; border-radius:6px; border:1px solid rgba(56,189,248,0.2);">
+                      📍 12.9634, 77.5755
+                    </span>
+                  </div>
                 </div>
+
               </div>
 
               <!-- DIVIDER HANDLE -->

@@ -46,6 +46,7 @@ def init_db():
         citizen_phone TEXT DEFAULT '+91-98XXXXX01',
         weather_condition TEXT DEFAULT 'Clear Skies / Normal',
         ai_verification_notes TEXT,
+        streetview_image_url TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         resolved_at TEXT
@@ -79,8 +80,8 @@ def add_complaint(data: dict) -> int:
         lat, lng, address, zone_type, image_url, after_image_url,
         severity_score, urgency_score, priority_score, priority_tier,
         sla_hours, status, report_count, citizen_name, citizen_phone,
-        weather_condition, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        weather_condition, created_at, updated_at, streetview_image_url
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data["ticket_code"], data["title"], data["description"], data["category"], data["department"],
         data["lat"], data["lng"], data["address"], data["zone_type"], data.get("image_url", ""),
@@ -88,7 +89,8 @@ def add_complaint(data: dict) -> int:
         data["priority_score"], data["priority_tier"], data["sla_hours"],
         data.get("status", "SUBMITTED"), data.get("report_count", 1),
         data.get("citizen_name", "Citizen"), data.get("citizen_phone", "+91-9876543210"),
-        data.get("weather_condition", "Clear Skies / Normal"), now, now
+        data.get("weather_condition", "Clear Skies / Normal"), now, now,
+        data.get("streetview_image_url", data.get("image_url", ""))
     ))
 
     complaint_id = cursor.lastrowid

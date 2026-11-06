@@ -1,11 +1,10 @@
 /**
- * Geospatial GIS Map Engine using Leaflet.js
- * Visualizes infrastructure complaints, priority-coded markers, 65m de-duplication buffers,
- * and high-resolution Satellite Imagery toggle (Esri World Imagery).
- * 
- * Split-screen layout:
- *  TOP    → satelliteCloseupMap: Esri satellite zoomed to zoom-19 close-up of defect
- *  BOTTOM → cityMap: OSM road map with all complaint markers & priority rings
+ * Geospatial GIS Map Engine & Visual Inspection Hub using Leaflet.js
+ * Combines:
+ *  1. Interactive Street Surroundings & Defect Inspector (Pan, Zoom, Scroll)
+ *  2. Esri High-Resolution Aerial Satellite Close-Up (Zoom 19)
+ *  3. AI OpenCV Defect Diagnostic Scan
+ *  4. Leaflet City Road Map with 65m De-duplication Buffers & Google Street View Integration
  */
 
 let cityMap = null;
@@ -18,7 +17,21 @@ let satelliteTileLayer = null;
 let isSatelliteMode = false;
 let showRadiusBuffers = true;
 
-const BENGALURU_CENTER = [12.9716, 77.5946];
+let currentInspectedTicket = null;
+let currentInspectionMode = "streetview";
+let currentPhotoAngle = 1;
+
+// Pan/Zoom State for Interactive Street View
+let pzState = {
+  scale: 1.0,
+  x: 0,
+  y: 0,
+  isDragging: false,
+  startX: 0,
+  startY: 0
+};
+
+const BENGALURU_CENTER = [12.9634, 77.5755];
 
 function initMap() {
   if (cityMap) return;
@@ -34,12 +47,12 @@ function initMap() {
 
   satelliteTileLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 19,
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    attribution: 'Tiles &copy; Esri'
   });
 
   cityMap = L.map("map", {
     center: BENGALURU_CENTER,
-    zoom: 12,
+    zoom: 13,
     layers: [streetTileLayer],
     zoomControl: true
   });
@@ -58,13 +71,18 @@ function initMap() {
     updateSatelliteButtonState();
   });
 
-  // ── TOP PANEL: Satellite Close-Up Map ──────────────────────────────────
+  // ── TOP PANEL: Satellite Close-Up Map & Interactive Pan/Zoom Viewer ─────
   initSatelliteCloseup();
+  initStreetViewPanZoom();
+
+  // Load default main pothole ticket (CP-BLR-8012)
+  if (window.allComplaints && allComplaints.length > 0) {
+    inspectTicketVisuals(allComplaints[0]);
+  }
 }
 
 /**
- * Initializes the top satellite close-up panel (Esri World Imagery, zoom 18).
- * Shows a red pulsing pin exactly at the selected defect location.
+ * Initializes the top satellite close-up panel (Esri World Imagery, zoom 19).
  */
 function initSatelliteCloseup() {
   const el = document.getElementById("satellite-closeup-map");
@@ -72,15 +90,14 @@ function initSatelliteCloseup() {
 
   satelliteCloseupMap = L.map("satellite-closeup-map", {
     center: BENGALURU_CENTER,
-    zoom: 18,
+    zoom: 19,
     zoomControl: false,
     attributionControl: false,
     dragging: true,
-    scrollWheelZoom: false,
-    doubleClickZoom: false
+    scrollWheelZoom: true,
+    doubleClickZoom: true
   });
 
-  // Esri satellite tiles — high resolution aerial imagery
   L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 20,
     attribution: 'Tiles &copy; Esri'
@@ -101,6 +118,353 @@ function initSatelliteCloseup() {
   });
 
   closeupMarker = L.marker(BENGALURU_CENTER, { icon: crosshairIcon }).addTo(satelliteCloseupMap);
+}
+
+/**
+ * Interactive Street & Surroundings Pan/Zoom/Scroll Inspector
+ */
+function initStreetViewPanZoom() {
+  const viewport = document.getElementById("streetview-viewport-panel");
+  const layer = document.getElementById("streetview-pan-layer");
+  if (!viewport || !layer) return;
+
+  function applyTransform() {
+    layer.style.transform = `translate(${pzState.x}px, ${pzState.y}px) scale(${pzState.scale})`;
+  }
+
+  // Mouse Drag to Pan
+  viewport.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    pzState.isDragging = true;
+    pzState.startX = e.clientX - pzState.x;
+    pzState.startY = e.clientY - pzState.y;
+    viewport.style.cursor = "grabbing";
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!pzState.isDragging) return;
+    pzState.x = e.clientX - pzState.startX;
+    pzState.y = e.clientY - pzState.startY;
+    applyTransform();
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (pzState.isDragging) {
+      pzState.isDragging = false;
+      viewport.style.cursor = "grab";
+    }
+  });
+
+  // Mouse Wheel to Zoom in/out
+  viewport.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 0.15 : -0.15;
+    const newScale = Math.min(4.0, Math.max(0.85, pzState.scale + zoomFactor));
+    pzState.scale = newScale;
+    applyTransform();
+  }, { passive: false });
+
+  // Touch Drag & Pan
+  viewport.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 1) {
+      pzState.isDragging = true;
+      pzState.startX = e.touches[0].clientX - pzState.x;
+      pzState.startY = e.touches[0].clientY - pzState.y;
+    }
+  }, { passive: true });
+
+  viewport.addEventListener("touchmove", (e) => {
+    if (!pzState.isDragging || e.touches.length !== 1) return;
+    pzState.x = e.touches[0].clientX - pzState.startX;
+    pzState.y = e.touches[0].clientY - pzState.startY;
+    applyTransform();
+  }, { passive: true });
+
+  viewport.addEventListener("touchend", () => {
+    pzState.isDragging = false;
+  }, { passive: true });
+}
+
+function zoomStreetView(delta) {
+  const layer = document.getElementById("streetview-pan-layer");
+  if (!layer) return;
+  pzState.scale = Math.min(4.0, Math.max(0.85, pzState.scale + delta));
+  layer.style.transform = `translate(${pzState.x}px, ${pzState.y}px) scale(${pzState.scale})`;
+}
+
+function resetStreetViewZoom() {
+  const layer = document.getElementById("streetview-pan-layer");
+  if (!layer) return;
+  pzState.scale = 1.0;
+  pzState.x = 0;
+  pzState.y = 0;
+  layer.style.transform = `translate(0px, 0px) scale(1)`;
+}
+
+/**
+ * Switch Top Visual Inspection Modes
+ */
+function switchInspectionMode(mode) {
+  currentInspectionMode = mode;
+
+  const btnStreet = document.getElementById("tab-mode-streetview");
+  const btnSat = document.getElementById("tab-mode-satellite");
+  const btnScan = document.getElementById("tab-mode-scan");
+
+  const panelStreet = document.getElementById("streetview-viewport-panel");
+  const panelSat = document.getElementById("satellite-closeup-map");
+  const panelScan = document.getElementById("ai-scan-viewport-panel");
+
+  // Reset button styles
+  [btnStreet, btnSat, btnScan].forEach(b => {
+    if (b) {
+      b.style.background = "transparent";
+      b.style.color = "#94a3b8";
+      b.style.fontWeight = "600";
+    }
+  });
+
+  // Hide all panels
+  if (panelStreet) panelStreet.style.display = "none";
+  if (panelSat) panelSat.style.display = "none";
+  if (panelScan) panelScan.style.display = "none";
+
+  if (mode === "streetview") {
+    if (panelStreet) panelStreet.style.display = "flex";
+    if (btnStreet) {
+      btnStreet.style.background = "#2563eb";
+      btnStreet.style.color = "#ffffff";
+      btnStreet.style.fontWeight = "700";
+    }
+  } else if (mode === "satellite") {
+    if (panelSat) {
+      panelSat.style.display = "block";
+      if (satelliteCloseupMap) {
+        setTimeout(() => satelliteCloseupMap.invalidateSize(), 50);
+      }
+    }
+    if (btnSat) {
+      btnSat.style.background = "#0891b2";
+      btnSat.style.color = "#ffffff";
+      btnSat.style.fontWeight = "700";
+    }
+  } else if (mode === "scan") {
+    if (panelScan) panelScan.style.display = "flex";
+    if (btnScan) {
+      btnScan.style.background = "#7c3aed";
+      btnScan.style.color = "#ffffff";
+      btnScan.style.fontWeight = "700";
+    }
+  }
+}
+
+/**
+ * Switch between Angle 1 (Pothole Pin) and Angle 2 (Surroundings)
+ */
+function switchStreetPhoto(angle) {
+  currentPhotoAngle = angle;
+  const imgEl = document.getElementById("inspector-street-img");
+  const btn1 = document.getElementById("btn-photo-1");
+  const btn2 = document.getElementById("btn-photo-2");
+  const defectMarker = document.getElementById("inspector-defect-marker");
+  const landmarkCallout = document.getElementById("inspector-landmark-callout");
+
+  if (!imgEl) return;
+
+  if (angle === 1) {
+    imgEl.src = (currentInspectedTicket && currentInspectedTicket.image_url) 
+      ? currentInspectedTicket.image_url 
+      : "/uploads/streetview_pothole_pin.jpg";
+    if (btn1) {
+      btn1.style.background = "rgba(37,99,235,0.9)";
+      btn1.style.color = "white";
+    }
+    if (btn2) {
+      btn2.style.background = "rgba(15,23,42,0.8)";
+      btn2.style.color = "#cbd5e1";
+    }
+    if (defectMarker) {
+      defectMarker.style.display = "flex";
+      defectMarker.style.top = "44%";
+      defectMarker.style.left = "58%";
+    }
+    if (landmarkCallout) {
+      landmarkCallout.style.display = "block";
+      landmarkCallout.style.top = "22%";
+      landmarkCallout.style.left = "28%";
+      landmarkCallout.innerText = "📍 Victoria Hospital Emergency Gate";
+    }
+  } else {
+    imgEl.src = (currentInspectedTicket && currentInspectedTicket.streetview_image_url)
+      ? currentInspectedTicket.streetview_image_url
+      : "/uploads/streetview_pothole_surroundings.jpg";
+    if (btn2) {
+      btn2.style.background = "rgba(37,99,235,0.9)";
+      btn2.style.color = "white";
+    }
+    if (btn1) {
+      btn1.style.background = "rgba(15,23,42,0.8)";
+      btn1.style.color = "#cbd5e1";
+    }
+    if (defectMarker) {
+      defectMarker.style.display = "flex";
+      defectMarker.style.top = "52%";
+      defectMarker.style.left = "48%";
+    }
+    if (landmarkCallout) {
+      landmarkCallout.style.display = "block";
+      landmarkCallout.style.top = "15%";
+      landmarkCallout.style.left = "20%";
+      landmarkCallout.innerText = "🚖 Auto-Rickshaw Stand & Corner Houses";
+    }
+  }
+
+  resetStreetViewZoom();
+}
+
+/**
+ * Inspect a specific complaint ticket in the Visual Inspection Hub
+ */
+function inspectTicketVisuals(ticket) {
+  if (!ticket) return;
+  currentInspectedTicket = ticket;
+
+  const lat = parseFloat(ticket.lat || 12.9634);
+  const lng = parseFloat(ticket.lng || 77.5755);
+
+  // Update Header Info
+  const codeEl = document.getElementById("inspector-ticket-code");
+  const tierEl = document.getElementById("inspector-ticket-tier");
+  const titleEl = document.getElementById("inspector-ticket-title");
+  const coordsEl = document.getElementById("inspector-coords");
+  const gmapsLink = document.getElementById("inspector-gmaps-link");
+  const navLink = document.getElementById("inspector-nav-link");
+
+  if (codeEl) codeEl.innerText = `#${ticket.ticket_code}`;
+  if (tierEl) {
+    tierEl.innerText = `${ticket.priority_tier} (${ticket.priority_score})`;
+    tierEl.className = ticket.priority_tier === "CRITICAL" ? "badge-critical" :
+                       ticket.priority_tier === "HIGH" ? "badge-high" : "badge-medium";
+  }
+  if (titleEl) titleEl.innerText = ticket.title;
+  if (coordsEl) coordsEl.innerText = `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+  // Google Maps Links (Real 360 Street View link with coordinates)
+  if (gmapsLink) {
+    gmapsLink.href = `https://www.google.com/maps/@${lat},${lng},3a,75y,90t/data=!3m6!1e1`;
+  }
+  if (navLink) {
+    navLink.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  }
+
+  // Update Photos
+  const streetImg = document.getElementById("inspector-street-img");
+  const scanImg = document.getElementById("inspector-ai-scan-img");
+  const defectLabel = document.getElementById("marker-defect-label");
+  const landmarkCallout = document.getElementById("inspector-landmark-callout");
+  const switcher = document.getElementById("inspector-photo-switcher");
+
+  if (defectLabel) {
+    defectLabel.innerText = `${(ticket.category || "DEFECT").toUpperCase()} LOCATED`;
+  }
+
+  if (landmarkCallout) {
+    landmarkCallout.innerText = `📍 ${ticket.address.split(",")[0]}`;
+  }
+
+  // Set images
+  let primaryImg = ticket.image_url || "/uploads/streetview_pothole_pin.jpg";
+  if (ticket.ticket_code === "CP-BLR-8012") {
+    primaryImg = "/uploads/streetview_pothole_pin.jpg";
+    if (switcher) switcher.style.display = "flex";
+  } else {
+    if (switcher) switcher.style.display = "none";
+  }
+
+  if (streetImg) streetImg.src = primaryImg;
+
+  // AI Diagnostic image
+  if (scanImg) {
+    if (ticket.ticket_code === "CP-BLR-8012") {
+      scanImg.src = "/uploads/ai_scan_streetview_pothole_pin.jpg";
+    } else {
+      const baseName = primaryImg.split("/").pop();
+      scanImg.src = `/uploads/ai_scan_${baseName}`;
+      scanImg.onerror = () => { scanImg.src = primaryImg; };
+    }
+  }
+
+  resetStreetViewZoom();
+
+  // Also sync the Satellite close-up panel
+  if (satelliteCloseupMap) {
+    satelliteCloseupMap.setView([lat, lng], 19, { animate: true, duration: 0.5 });
+    if (closeupMarker) {
+      closeupMarker.setLatLng([lat, lng]);
+    }
+  }
+}
+
+function updateStreetView(lat, lng) {
+  // Find ticket matching lat/lng
+  if (window.allComplaints) {
+    const match = allComplaints.find(c => Math.abs(c.lat - lat) < 0.0005 && Math.abs(c.lng - lng) < 0.0005);
+    if (match) {
+      inspectTicketVisuals(match);
+      switchInspectionMode("streetview");
+      return;
+    }
+  }
+  updateSatelliteCloseup(lat, lng);
+}
+
+function updateSatelliteCloseup(lat, lng) {
+  if (!satelliteCloseupMap) initSatelliteCloseup();
+  if (!satelliteCloseupMap) return;
+
+  satelliteCloseupMap.setView([lat, lng], 19, { animate: true, duration: 0.5 });
+  if (closeupMarker) {
+    closeupMarker.setLatLng([lat, lng]);
+  }
+
+  const coordsEl = document.getElementById("inspector-coords");
+  if (coordsEl) {
+    coordsEl.innerText = `📍 ${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`;
+  }
+  const gmLink = document.getElementById("inspector-gmaps-link");
+  if (gmLink) {
+    gmLink.href = `https://www.google.com/maps/@${lat},${lng},3a,75y,90t/data=!3m6!1e1`;
+  }
+}
+
+function zoomSatellite(lat, lng) {
+  if (!cityMap) initMap();
+  switchInspectionMode("satellite");
+  cityMap.setView([lat, lng], 18, { animate: true });
+  updateSatelliteCloseup(lat, lng);
+}
+
+function focusTicketOnMap(lat, lng, enableSatellite = false) {
+  switchTab("admin");
+  setTimeout(() => {
+    if (!cityMap) initMap();
+    if (enableSatellite && !isSatelliteMode) {
+      toggleSatelliteView();
+    }
+    const zoomLevel = enableSatellite ? 18 : 16;
+    cityMap.setView([lat, lng], zoomLevel, { animate: true });
+
+    // Sync inspection panel
+    if (window.allComplaints) {
+      const match = allComplaints.find(c => Math.abs(c.lat - lat) < 0.0005 && Math.abs(c.lng - lng) < 0.0005);
+      if (match) {
+        inspectTicketVisuals(match);
+      }
+    }
+    if (enableSatellite) {
+      switchInspectionMode("satellite");
+    }
+  }, 200);
 }
 
 function toggleSatelliteView() {
@@ -167,7 +531,7 @@ function renderMapMarkers(complaints) {
 
     // Clean High-Contrast Popup Content
     const popupHtml = `
-      <div style="font-family: inherit; width: 240px; font-size: 12px; color: #0f172a; padding: 2px;">
+      <div style="font-family: inherit; width: 250px; font-size: 12px; color: #0f172a; padding: 2px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
           <strong style="color: #2563eb; font-size: 12px;">#${ticket.ticket_code}</strong>
           <span style="font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 6px; background: ${ticket.priority_tier === 'CRITICAL' ? '#fee2e2; color: #dc2626; border: 1px solid #fca5a5;' : ticket.priority_tier === 'HIGH' ? '#ffedd5; color: #ea580c; border: 1px solid #fdba74;' : '#fef9c3; color: #ca8a04; border: 1px solid #fde047;'}">
@@ -175,9 +539,9 @@ function renderMapMarkers(complaints) {
           </span>
         </div>
         
-        <div style="position: relative; width: 100%; height: 95px; border-radius: 6px; overflow: hidden; margin-bottom: 6px; border: 1px solid #cbd5e1;">
+        <div style="position: relative; width: 100%; height: 100px; border-radius: 6px; overflow: hidden; margin-bottom: 6px; border: 1px solid #cbd5e1; background:#0f172a;">
           <img src="${ticket.image_url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Defect">
-          <div style="position: absolute; bottom: 4px; right: 4px; background: rgba(15,23,42,0.8); color: white; font-size: 9px; padding: 2px 5px; border-radius: 4px;">
+          <div style="position: absolute; bottom: 4px; right: 4px; background: rgba(15,23,42,0.85); color: white; font-size: 9px; padding: 2px 6px; border-radius: 4px;">
             GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}
           </div>
         </div>
@@ -190,13 +554,13 @@ function renderMapMarkers(complaints) {
         </div>
 
         <div style="display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap;">
-          <button onclick="updateStreetView(${lat}, ${lng})" style="flex: 1; background: #7c3aed; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
-            🔍 Street View
+          <button onclick="updateStreetView(${lat}, ${lng})" style="flex: 1; background: #2563eb; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
+            📸 Inspect Street
           </button>
           <button onclick="zoomSatellite(${lat}, ${lng})" style="flex: 1; background: #0891b2; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
             🛰️ Satellite
           </button>
-          <button onclick="openResolveModal(${ticket.id})" style="flex: 1; background: #2563eb; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
+          <button onclick="openResolveModal(${ticket.id})" style="flex: 1; background: #059669; color: white; font-weight: bold; border: none; padding: 6px; border-radius: 6px; font-size: 10px; cursor: pointer; min-width:80px;">
             ${ticket.status === 'RESOLVED' ? '✔ View Proof' : 'Verify & Resolve'}
           </button>
         </div>
@@ -204,7 +568,6 @@ function renderMapMarkers(complaints) {
     `;
 
     marker.bindPopup(popupHtml);
-    // When this marker's popup opens, sync the Street View panel
     marker.on("popupopen", function() {
       updateStreetView(lat, lng);
     });
@@ -217,7 +580,7 @@ function renderMapMarkers(complaints) {
         color: circleColor,
         fillColor: circleColor,
         fillOpacity: 0.18,
-        radius: 65,  // 65 meters de-duplication zone
+        radius: 65,
         weight: 2,
         dashArray: "4, 4"
       });
@@ -225,63 +588,6 @@ function renderMapMarkers(complaints) {
       radiusLayerGroup.addLayer(circle);
     }
   });
-}
-
-function zoomSatellite(lat, lng) {
-  if (!cityMap) initMap();
-  if (!isSatelliteMode) {
-    toggleSatelliteView();
-  }
-  cityMap.setView([lat, lng], 18, { animate: true });
-  // Also update satellite close-up top panel
-  updateSatelliteCloseup(lat, lng);
-}
-
-/**
- * updateSatelliteCloseup — pans the top satellite panel to lat/lng at zoom 18/19
- * and moves the red crosshair pin. Also updates coord badges and Google Maps link.
- */
-function updateStreetView(lat, lng) {
-  // Alias kept so popup buttons still work (they call updateStreetView)
-  updateSatelliteCloseup(lat, lng);
-}
-
-function updateSatelliteCloseup(lat, lng) {
-  if (!satelliteCloseupMap) initSatelliteCloseup();
-  if (!satelliteCloseupMap) return;
-
-  const zoom = 19; // Max close-up for best aerial detail
-  satelliteCloseupMap.setView([lat, lng], zoom, { animate: true, duration: 0.6 });
-
-  if (closeupMarker) {
-    closeupMarker.setLatLng([lat, lng]);
-  }
-
-  // Update coord badge
-  const coordsEl = document.getElementById("sv-coords");
-  if (coordsEl) {
-    coordsEl.textContent = `📍 ${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`;
-  }
-
-  // Update "Open in Google Maps" link
-  const gmLink = document.getElementById("gmaps-link");
-  if (gmLink) {
-    gmLink.href = `https://www.google.com/maps/@${lat},${lng},18z`;
-  }
-}
-
-function focusTicketOnMap(lat, lng, enableSatellite = false) {
-  switchTab("admin");
-  setTimeout(() => {
-    if (!cityMap) initMap();
-    if (enableSatellite && !isSatelliteMode) {
-      toggleSatelliteView();
-    }
-    const zoomLevel = enableSatellite ? 18 : 16;
-    cityMap.setView([lat, lng], zoomLevel, { animate: true });
-    // Also update the satellite close-up panel to this location
-    updateSatelliteCloseup(lat, lng);
-  }, 200);
 }
 
 function toggleMapClusters() {

@@ -510,6 +510,9 @@ async function loadComplaints() {
       renderCitizenFeed(allComplaints);
       renderAdminQueue(allComplaints);
       if (cityMap) renderMapMarkers(allComplaints);
+      if (allComplaints.length > 0 && typeof inspectTicketVisuals === "function") {
+        inspectTicketVisuals(allComplaints[0]);
+      }
     }
   } catch (err) {
     console.error("Failed to load complaints:", err);
@@ -658,8 +661,8 @@ function renderAdminQueue(complaints) {
         </div>
 
         <div class="flex items-center gap-2 pt-2.5 border-t border-slate-200">
-          <button onclick="focusTicketOnMap(${ticket.lat}, ${ticket.lng}, false)" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 rounded border border-slate-300 shadow-sm">
-            Map
+          <button onclick="selectAndInspectTicket(${ticket.id})" class="px-2.5 py-1 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm flex items-center gap-1">
+            📸 Inspect Street & Defect
           </button>
           <button onclick="focusTicketOnMap(${ticket.lat}, ${ticket.lng}, true)" class="px-2.5 py-1 text-[11px] font-bold bg-cyan-50 hover:bg-cyan-100 text-cyan-800 rounded border border-cyan-300 shadow-sm flex items-center gap-1">
             🛰️ Satellite
@@ -797,5 +800,22 @@ async function executeResolveVerification() {
     alert("Error verifying resolution: " + err.message);
   } finally {
     btn.disabled = false;
+  }
+}
+
+
+// Select and Inspect Complaint in Top Inspection Hub
+function selectAndInspectTicket(id) {
+  const ticket = allComplaints.find(c => c.id === id);
+  if (ticket) {
+    if (typeof inspectTicketVisuals === "function") {
+      inspectTicketVisuals(ticket);
+    }
+    if (typeof switchInspectionMode === "function") {
+      switchInspectionMode("streetview");
+    }
+    if (typeof focusTicketOnMap === "function") {
+      focusTicketOnMap(ticket.lat, ticket.lng, false);
+    }
   }
 }

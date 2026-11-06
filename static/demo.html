@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicPulse AI — Demo Presentation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInLeft {
+      from { opacity: 0; transform: translateX(-32px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes fadeInRight {
+      from { opacity: 0; transform: translateX(32px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.88); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes pulseRing {
+      0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+      70%  { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+    }
+    @keyframes slideNumber {
+      from { opacity: 0; transform: scale(0.5) rotate(-12deg); }
+      to   { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+    .anim-fade-up    { animation: fadeInUp 0.6s ease-out both; }
+    .anim-fade-left  { animation: fadeInLeft 0.55s ease-out both; }
+    .anim-fade-right { animation: fadeInRight 0.55s ease-out both; }
+    .anim-scale      { animation: scaleIn 0.5s ease-out both; }
+    .anim-number     { animation: slideNumber 0.4s ease-out both; }
+    .delay-1 { animation-delay: 0.12s; }
+    .delay-2 { animation-delay: 0.24s; }
+    .delay-3 { animation-delay: 0.38s; }
+    .delay-4 { animation-delay: 0.52s; }
+    .delay-5 { animation-delay: 0.66s; }
+    .pulse-dot { animation: pulseRing 1.6s ease-out infinite; }
+
+    .slide { display: none; }
+    .slide.active { display: flex; }
+
+    .progress-fill {
+      transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col select-none">
+
+  <!-- Top Bar -->
+  <div class="sticky top-0 z-50 bg-white/95 border-b border-slate-200 px-5 py-2.5 flex items-center justify-between" style="backdrop-filter:blur(12px);">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-md" style="background: linear-gradient(135deg, #2563eb, #7c3aed);">CP</div>
+      <div>
+        <span class="font-extrabold text-sm text-slate-900">Civic<span class="text-blue-600">Pulse</span> AI</span>
+        <span class="ml-1.5 text-xs font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Demo Presentation</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="/" class="text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors">← Back to App</a>
+      <span id="slide-counter" class="text-xs font-bold text-slate-400 hidden sm:inline">1 / 7</span>
+      <div class="flex gap-1.5">
+        <button onclick="prevSlide()" id="btn-prev" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 shadow-sm transition-all" style="cursor:pointer;">←</button>
+        <button onclick="nextSlide()" id="btn-next" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white shadow-md transition-all" style="cursor:pointer; background:linear-gradient(135deg,#2563eb,#7c3aed);">→</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="w-full h-1 bg-slate-200">
+    <div id="progress-bar" class="progress-fill h-full rounded-r" style="width:14.28%; background:linear-gradient(90deg,#2563eb,#7c3aed);"></div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 1: Title / System Overview                             -->
+  <!-- ============================================================ -->
+  <div class="slide active flex-1" id="slide-1">
+    <div class="w-full flex flex-col items-center justify-center px-6 py-10 flex-1">
+      <div class="text-center max-w-2xl mx-auto">
+        <div class="anim-scale inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 shadow-lg" style="background: linear-gradient(135deg, #2563eb, #7c3aed);">
+          <span class="text-4xl">🏙️</span>
+        </div>
+        <h1 class="anim-fade-up text-4xl font-black text-slate-900 mb-3 leading-tight">
+          Civic<span class="text-blue-600">Pulse</span> AI
+        </h1>
+        <p class="anim-fade-up delay-1 text-lg font-semibold text-violet-600">
+          Public Infrastructure Complaint Analysis & Priority Management
+        </p>
+        <p class="anim-fade-up delay-2 text-sm text-slate-500 mt-2">
+          Smart Cities Track T1 — TechXcellence Hackathon
+        </p>
+
+        <div class="anim-fade-up delay-3 mt-8 bg-white border border-slate-200 rounded-2xl p-6 text-left shadow-sm max-w-lg mx-auto">
+          <p class="text-sm font-extrabold text-slate-900 mb-2 flex items-center gap-2">🎯 Main Objective</p>
+          <p class="text-sm text-slate-600 leading-relaxed italic">
+            "Our main objective is to make complaint reporting and identification easier. Citizens can report potholes with geo-tagged photographs, while authorities can view the exact location through GPS mapping and satellite landmarks, helping them identify and address the issue efficiently."
+          </p>
+        </div>
+
+        <div class="anim-fade-up delay-4 mt-6 flex flex-wrap justify-center gap-2.5">
+          <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">OpenCV Computer Vision</span>
+          <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-violet-50 text-violet-700 border border-violet-200">NLP Urgency Detection</span>
+          <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">GPS + Satellite Maps</span>
+          <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">Dynamic Priority Scoring</span>
+        </div>
+
+        <p class="anim-fade-up delay-5 text-xs text-slate-400 mt-8">
+          Press <kbd class="px-1.5 py-0.5 rounded border border-slate-200 bg-white text-xs font-mono font-bold text-slate-600">→</kbd> or click the arrow to navigate
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 2: Complaint Registration                              -->
+  <!-- ============================================================ -->
+  <div class="slide flex-1" id="slide-2">
+    <div class="w-full flex flex-col items-center px-6 py-8 flex-1">
+      <div class="max-w-2xl w-full">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="anim-number w-11 h-11 rounded-xl flex items-center justify-center font-black text-white text-lg shadow-md" style="background:linear-gradient(135deg,#2563eb,#3b82f6);">1</div>
+          <div class="anim-fade-right delay-1">
+            <h2 class="text-2xl font-black text-slate-900">Complaint Registration</h2>
+            <p class="text-sm text-slate-500">Citizens report infrastructure defects in seconds</p>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-4">
+          <div class="flex gap-4 items-start">
+            <div class="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 text-3xl bg-blue-50">📸</div>
+            <div>
+              <p class="font-bold text-sm text-slate-900 mb-1">Upload a Defect Photo</p>
+              <p class="text-sm text-slate-500 leading-relaxed">
+                The citizen snaps a photo of the pothole, broken pipe, dangling wire, or garbage dump. The image is immediately sent to the <strong class="text-slate-700">OpenCV AI engine</strong> for defect severity analysis.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-3 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-4">
+          <div class="flex gap-4 items-start">
+            <div class="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 text-3xl bg-violet-50">🧠</div>
+            <div>
+              <p class="font-bold text-sm text-slate-900 mb-1">AI Analyzes Severity in Real-Time</p>
+              <p class="text-sm text-slate-500 leading-relaxed">
+                Computer Vision detects crack edges, crater contours, and dark voids. The NLP engine scans the description for safety keywords like <span class="font-bold text-red-600">"hospital"</span>, <span class="font-bold text-red-600">"school"</span>, <span class="font-bold text-red-600">"live wire"</span>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-4 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div class="flex gap-4 items-start">
+            <div class="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 text-3xl bg-amber-50">⚡</div>
+            <div>
+              <p class="font-bold text-sm text-slate-900 mb-1">Instant Triage Result</p>
+              <p class="text-sm text-slate-500 leading-relaxed">
+                Within seconds, the citizen sees the computed <strong class="text-slate-700">Priority Score</strong> (e.g., 96/100 CRITICAL), the <strong class="text-slate-700">SLA deadline</strong> (&lt; 6 hours), and the <strong class="text-slate-700">department</strong> automatically assigned (Roads & PWD).
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 3: Geo-Tagging                                         -->
+  <!-- ============================================================ -->
+  <div class="slide flex-1" id="slide-3">
+    <div class="w-full flex flex-col items-center px-6 py-8 flex-1">
+      <div class="max-w-2xl w-full">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="anim-number w-11 h-11 rounded-xl flex items-center justify-center font-black text-white text-lg shadow-md" style="background:linear-gradient(135deg,#059669,#10b981);">2</div>
+          <div class="anim-fade-right delay-1">
+            <h2 class="text-2xl font-black text-slate-900">Geo-Tagging</h2>
+            <p class="text-sm text-slate-500">Automatic GPS coordinate capture</p>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-4">
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            The system automatically captures the <strong class="text-slate-800">exact GPS coordinates</strong> of the reported defect. No manual address entry needed.
+          </p>
+
+          <!-- GPS Coordinates Display -->
+          <div class="rounded-xl p-4 border border-emerald-200 bg-emerald-50/50">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-3 h-3 rounded-full pulse-dot bg-red-500"></div>
+              <span class="text-xs font-extrabold text-emerald-700 uppercase tracking-wider">LIVE GPS LOCK</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-xl p-3 bg-white border border-slate-200 shadow-sm">
+                <span class="text-xs text-slate-400 font-semibold">Latitude</span>
+                <p class="text-xl font-black font-mono text-slate-900">12.9634°N</p>
+              </div>
+              <div class="rounded-xl p-3 bg-white border border-slate-200 shadow-sm">
+                <span class="text-xs text-slate-400 font-semibold">Longitude</span>
+                <p class="text-xl font-black font-mono text-slate-900">77.5755°E</p>
+              </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-3 font-semibold">📍 Victoria Hospital Emergency Gate, Kalasipalya, Bengaluru</p>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-3 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <p class="font-bold text-sm text-slate-900 mb-2">🎯 Rapido-Style Precision Micro-Pinning</p>
+          <p class="text-sm text-slate-500 leading-relaxed">
+            Citizens can <strong class="text-slate-700">drag a pin on a satellite map</strong> to mark the exact lane, building gate, or road divider — even if the GPS is off by a few meters. This gives field crews sub-10m accuracy for locating defects.
+          </p>
+          <div class="mt-3 rounded-xl p-3 border border-blue-200 bg-blue-50/50">
+            <p class="text-xs font-bold text-blue-700">💡 Why this matters</p>
+            <p class="text-xs text-slate-500 mt-1">Standard GPS has 5–15m error. A pothole on a 4-lane road could be on any lane. Micro-pinning on satellite imagery eliminates ambiguity.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 4: Satellite Image Integration                         -->
+  <!-- ============================================================ -->
+  <div class="slide flex-1" id="slide-4">
+    <div class="w-full flex flex-col items-center px-6 py-8 flex-1">
+      <div class="max-w-2xl w-full">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="anim-number w-11 h-11 rounded-xl flex items-center justify-center font-black text-white text-lg shadow-md" style="background:linear-gradient(135deg,#0891b2,#06b6d4);">3</div>
+          <div class="anim-fade-right delay-1">
+            <h2 class="text-2xl font-black text-slate-900">Satellite Image Integration</h2>
+            <p class="text-sm text-slate-500">High-resolution aerial view of defect sites</p>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-2 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm mb-4">
+          <div class="px-5 py-3 flex items-center justify-between border-b border-slate-200 bg-slate-50">
+            <span class="text-xs font-extrabold text-slate-700">🛰️ Esri World Imagery — Zoom Level 19</span>
+            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full border border-cyan-200 bg-cyan-50 text-cyan-700">LIVE</span>
+          </div>
+          <div class="p-5">
+            <div class="rounded-xl border-2 border-dashed border-cyan-300 p-8 text-center bg-cyan-50/30">
+              <span class="text-5xl block mb-3">🛰️</span>
+              <p class="text-sm font-bold text-slate-800">Split-Screen Map View</p>
+              <p class="text-xs text-slate-500 mt-1.5 max-w-sm mx-auto leading-relaxed">Top panel shows Esri satellite close-up at zoom-19 for building-level detail. Bottom panel shows OpenStreetMap road view with all complaint markers and 65m zones.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-3 grid grid-cols-2 gap-3">
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <span class="text-2xl block mb-2">📡</span>
+            <p class="text-sm font-bold text-slate-800">Esri Aerial Tiles</p>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">High-resolution satellite imagery showing individual buildings, lanes, and road markings.</p>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <span class="text-2xl block mb-2">🗺️</span>
+            <p class="text-sm font-bold text-slate-800">OSM Road Map</p>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">Labeled streets, landmarks, and navigable routes for crew dispatch planning.</p>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-4 mt-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <div class="flex gap-3 items-start">
+            <span class="text-xl shrink-0">🔗</span>
+            <div>
+              <p class="text-sm font-bold text-slate-800">Google Maps Deep-Link</p>
+              <p class="text-xs text-slate-500 mt-0.5">Each marker includes a one-click "Open in Google Maps" link so field crews can navigate with turn-by-turn directions using their phone.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 5: Authority Dashboard                                 -->
+  <!-- ============================================================ -->
+  <div class="slide flex-1" id="slide-5">
+    <div class="w-full flex flex-col items-center px-6 py-8 flex-1">
+      <div class="max-w-2xl w-full">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="anim-number w-11 h-11 rounded-xl flex items-center justify-center font-black text-white text-lg shadow-md" style="background:linear-gradient(135deg,#dc2626,#ef4444);">4</div>
+          <div class="anim-fade-right delay-1">
+            <h2 class="text-2xl font-black text-slate-900">Authority Dashboard</h2>
+            <p class="text-sm text-slate-500">Municipal Command Center & GIS Operations</p>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-4">
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            When the authority logs in, they see a <strong class="text-slate-800">real-time priority dispatch queue</strong> ranked by AI-computed risk scores. Each ticket displays the geo-tagged photograph, exact GPS location, and nearby satellite landmarks.
+          </p>
+
+          <!-- Real Street Photos Showcase -->
+          <div class="rounded-2xl p-4 border border-slate-200 bg-slate-50 mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">#CP-BLR-8012</span>
+              <span class="text-xs font-extrabold px-2.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-200">🔴 CRITICAL (96/100)</span>
+            </div>
+            <p class="text-sm font-bold text-slate-900 mb-2">Severe Crater Pothole blocking Ambulance Entrance</p>
+            
+            <!-- Side-by-Side Street & Surroundings Inspection -->
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div class="rounded-xl overflow-hidden border border-slate-300 bg-slate-900 relative">
+                <img src="/uploads/streetview_pothole_pin.jpg" alt="Pothole with Location Pin" class="w-full h-44 object-cover">
+                <div class="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">
+                  📍 Exact Defect Pin & Road Trench
+                </div>
+              </div>
+              <div class="rounded-xl overflow-hidden border border-slate-300 bg-slate-900 relative">
+                <img src="/uploads/streetview_pothole_surroundings.jpg" alt="Surroundings & Street View" class="w-full h-44 object-cover">
+                <div class="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">
+                  🔄 360° Surroundings & Landmarks
+                </div>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-500 mb-2 font-medium">📍 Victoria Hospital Emergency Gate, Kalasipalya, Bengaluru (12.9634, 77.5755)</p>
+            <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 mb-3">
+              <span>🏢 Roads & PWD</span>
+              <span>⏰ SLA: &lt; 6 hours</span>
+              <span class="font-bold text-amber-700">👥 8 citizen reports merged</span>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <a href="https://www.google.com/maps/@12.9634,77.5755,3a,75y,90t/data=!3m6!1e1" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm flex items-center gap-1.5" style="background:#2563eb;">
+                🌐 Open Live 360° in Google Maps ↗
+              </a>
+              <span class="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm" style="background:#0891b2;">🛰️ Satellite Close-Up</span>
+              <span class="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm" style="background:#4f46e5;">Dispatch Crew</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="rounded-xl p-3 border border-slate-200 bg-slate-50">
+              <span class="text-2xl font-black text-red-600 block">4</span>
+              <p class="text-xs font-semibold text-slate-500">Critical Active</p>
+            </div>
+            <div class="rounded-xl p-3 border border-slate-200 bg-slate-50">
+              <span class="text-2xl font-black text-indigo-600 block">25</span>
+              <p class="text-xs font-semibold text-slate-500">Duplicates Merged</p>
+            </div>
+            <div class="rounded-xl p-3 border border-slate-200 bg-slate-50">
+              <span class="text-2xl font-black text-emerald-600 block">2</span>
+              <p class="text-xs font-semibold text-slate-500">AI-Verified Repairs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 6: Easy Identification                                 -->
+  <!-- ============================================================ -->
+  <div class="slide flex-1" id="slide-6">
+    <div class="w-full flex flex-col items-center px-6 py-8 flex-1">
+      <div class="max-w-2xl w-full">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="anim-number w-11 h-11 rounded-xl flex items-center justify-center font-black text-white text-lg shadow-md" style="background:linear-gradient(135deg,#d97706,#f59e0b);">5</div>
+          <div class="anim-fade-right delay-1">
+            <h2 class="text-2xl font-black text-slate-900">Easy Identification</h2>
+            <p class="text-sm text-slate-500">Locate defects even without a street address</p>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-4">
+          <p class="text-sm text-slate-500 leading-relaxed mb-4">
+            Many potholes exist in areas with <strong class="text-slate-800">no clear street address</strong> — unmarked lanes, internal colony roads, service roads under flyovers. CivicPulse solves this:
+          </p>
+
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+              <span class="text-xl shrink-0 mt-0.5">📍</span>
+              <div>
+                <p class="text-sm font-bold text-slate-800">GPS Pin + Satellite Overlay</p>
+                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">The red pin is shown on high-res satellite imagery. Authorities can see exactly which lane, gate, or divider the defect is near.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+              <span class="text-xl shrink-0 mt-0.5">🏫</span>
+              <div>
+                <p class="text-sm font-bold text-slate-800">Nearby Landmark Anchoring</p>
+                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Buildings, schools, hospitals, and metro stations visible on the satellite map act as reference landmarks — even without a formal address.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+              <span class="text-xl shrink-0 mt-0.5">🔴</span>
+              <div>
+                <p class="text-sm font-bold text-slate-800">65-Meter De-Duplication Buffer</p>
+                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Dashed circles around each complaint show the spatial zone. Multiple reports in the same area automatically merge — confirming the location and boosting priority.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+              <span class="text-xl shrink-0 mt-0.5">📝</span>
+              <div>
+                <p class="text-sm font-bold text-slate-800">Access Instructions</p>
+                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">"Left lane, 10m before Victoria emergency ramp entrance" — citizens add gate notes that help field crews navigate the last few meters.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 7: Conclusion / Key Takeaway                           -->
+  <!-- ============================================================ -->
+  <div class="slide flex-1" id="slide-7">
+    <div class="w-full flex flex-col items-center justify-center px-6 py-10 flex-1">
+      <div class="text-center max-w-xl mx-auto">
+        <div class="anim-scale inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 shadow-lg" style="background: linear-gradient(135deg, #059669, #10b981);">
+          <span class="text-4xl">✅</span>
+        </div>
+
+        <h2 class="anim-fade-up text-3xl font-black text-slate-900 mb-4 leading-tight">
+          Making Civic Complaints <span class="text-blue-600">Intelligent</span>
+        </h2>
+
+        <div class="anim-fade-up delay-1 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm text-left mb-6">
+          <p class="text-sm text-slate-600 leading-relaxed italic">
+            "Our main objective is to make complaint reporting and identification easier. Citizens can report potholes with geo-tagged photographs, while authorities can view the exact location through GPS mapping and satellite landmarks, helping them identify and address the issue efficiently."
+          </p>
+        </div>
+
+        <div class="anim-fade-up delay-2 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto mb-8">
+          <div class="rounded-xl p-3 border border-slate-200 bg-white shadow-sm">
+            <span class="text-2xl block mb-1">📸</span>
+            <p class="text-xs font-bold text-slate-800">Photo → AI</p>
+          </div>
+          <div class="rounded-xl p-3 border border-slate-200 bg-white shadow-sm">
+            <span class="text-2xl block mb-1">📍</span>
+            <p class="text-xs font-bold text-slate-800">GPS → Pin</p>
+          </div>
+          <div class="rounded-xl p-3 border border-slate-200 bg-white shadow-sm">
+            <span class="text-2xl block mb-1">🧠</span>
+            <p class="text-xs font-bold text-slate-800">AI → Priority</p>
+          </div>
+          <div class="rounded-xl p-3 border border-slate-200 bg-white shadow-sm">
+            <span class="text-2xl block mb-1">🚀</span>
+            <p class="text-xs font-bold text-slate-800">Dispatch → Fix</p>
+          </div>
+        </div>
+
+        <div class="anim-fade-up delay-3 mb-6">
+          <a href="/" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-extrabold text-white shadow-lg transition-all hover:shadow-xl" style="background:linear-gradient(135deg,#2563eb,#7c3aed);">
+            🚀 Launch Live Application →
+          </a>
+        </div>
+
+        <div class="anim-fade-up delay-4">
+          <p class="text-sm font-bold text-slate-700">Civic<span class="text-blue-600">Pulse</span> AI</p>
+          <p class="text-xs text-slate-400 mt-0.5">TechXcellence Hackathon — Smart Cities Track T1 — Problem Statement #4</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 py-3 px-6 text-center text-xs font-medium text-slate-400 bg-white mt-auto">
+    CivicPulse AI — Smart Cities Track T1 | Public Infrastructure Complaint Analysis & Priority Management System
+  </footer>
+
+  <script>
+    const TOTAL_SLIDES = 7;
+    let currentSlide = 1;
+
+    function showSlide(n) {
+      // Hide all slides and reset animations
+      document.querySelectorAll('.slide').forEach(s => {
+        s.classList.remove('active');
+        s.querySelectorAll('[class*="anim-"]').forEach(el => {
+          el.style.animation = 'none';
+          el.offsetHeight; // trigger reflow
+          el.style.animation = '';
+        });
+      });
+
+      const target = document.getElementById('slide-' + n);
+      if (target) target.classList.add('active');
+
+      currentSlide = n;
+      document.getElementById('slide-counter').textContent = n + ' / ' + TOTAL_SLIDES;
+      document.getElementById('progress-bar').style.width = ((n / TOTAL_SLIDES) * 100) + '%';
+
+      document.getElementById('btn-prev').style.opacity = n === 1 ? '0.35' : '1';
+      document.getElementById('btn-next').style.opacity = n === TOTAL_SLIDES ? '0.35' : '1';
+
+      // Scroll to top of page on slide change
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function nextSlide() {
+      if (currentSlide < TOTAL_SLIDES) showSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) showSlide(currentSlide - 1);
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+      if (e.key === 'Home') { e.preventDefault(); showSlide(1); }
+      if (e.key === 'End') { e.preventDefault(); showSlide(TOTAL_SLIDES); }
+    });
+
+    // Touch swipe support for mobile
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+      const delta = e.changedTouches[0].screenX - touchStartX;
+      if (delta < -50) nextSlide();
+      else if (delta > 50) prevSlide();
+    }, { passive: true });
+
+    showSlide(1);
+  </script>
+</body>
+</html>
