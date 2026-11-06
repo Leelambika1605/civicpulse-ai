@@ -359,6 +359,11 @@ function displaySubmissionResult(data) {
       <div class="flex justify-between"><span>Department Assigned:</span> <strong class="text-slate-800 font-bold">${t.department}</strong></div>
       <div class="flex justify-between"><span>Dynamic Priority Score:</span> <strong class="text-red-600 font-extrabold">${t.priority_score}/100 (${t.priority_tier})</strong></div>
       <div class="flex justify-between"><span>Resolution SLA:</span> <strong class="text-slate-800 font-bold">Under ${t.sla_hours} Hours</strong></div>
+      <div class="pt-2 mt-2 border-t border-emerald-200 flex justify-end">
+        <button onclick="focusTicketOnMap(${t.lat}, ${t.lng}, true)" class="px-3 py-1.5 text-xs bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg font-bold shadow-sm flex items-center gap-1.5">
+          🛰️ View Location on Authority Satellite Map
+        </button>
+      </div>
     `;
   }
 
@@ -523,8 +528,11 @@ function renderAdminQueue(complaints) {
         </div>
 
         <div class="flex items-center gap-2 pt-2.5 border-t border-slate-200">
-          <button onclick="focusTicketOnMap(${ticket.lat}, ${ticket.lng})" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 rounded border border-slate-300 shadow-sm">
+          <button onclick="focusTicketOnMap(${ticket.lat}, ${ticket.lng}, false)" class="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 rounded border border-slate-300 shadow-sm">
             Map
+          </button>
+          <button onclick="focusTicketOnMap(${ticket.lat}, ${ticket.lng}, true)" class="px-2.5 py-1 text-[11px] font-bold bg-cyan-50 hover:bg-cyan-100 text-cyan-800 rounded border border-cyan-300 shadow-sm flex items-center gap-1">
+            🛰️ Satellite
           </button>
           
           ${ticket.status !== 'IN_PROGRESS' && !isResolved ? `
