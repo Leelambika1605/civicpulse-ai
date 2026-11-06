@@ -405,41 +405,53 @@
       <!-- Main Command Grid: GIS Map + Priority Queue -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- Left: Split-Screen GIS Map (Street View top + Road Map bottom) -->
+        <!-- Left: Split-Screen GIS Map (Satellite Close-Up top + Road Map bottom) -->
         <div class="lg:col-span-7 flex flex-col gap-3">
           <div class="card-glass p-3 relative shadow-md" style="overflow:hidden;">
 
             <!-- Split Map Container -->
-            <div id="split-map-container" style="border-radius:0.75rem; overflow:hidden; border:1px solid #e2e8f0; display:flex; flex-direction:column; height:600px;">
+            <div id="split-map-container" style="border-radius:0.75rem; overflow:hidden; border:1px solid #e2e8f0; display:flex; flex-direction:column; height:620px; box-shadow:0 4px 24px rgba(0,0,0,0.10);">
 
-              <!-- TOP HALF: Google Street View Panel -->
-              <div id="street-view-panel" style="height:50%; position:relative; background:#1a2744; flex-shrink:0;">
-                <iframe id="street-view-iframe"
-                  src="https://www.google.com/maps/@12.9634,77.5755,3a,75y,0h,90t/data=!3m6!1e1!3m4!1sAF1QipMEBlDE9b7YZ6XQ8QHbgFyekGERAhsb1Ky9bEJR!2e10!7i11000!8i5500"
-                  style="width:100%; height:100%; border:none; display:block;"
-                  allowfullscreen
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade">
-                </iframe>
-                <!-- Street View label badge -->
-                <div style="position:absolute; top:10px; left:10px; z-index:10; background:rgba(255,255,255,0.93); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(0,0,0,0.18); border:1px solid #e2e8f0; pointer-events:none;">
-                  <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#ef4444;"></span>
-                  Street View — Actual Defect Location
+              <!-- TOP HALF: High-Res Satellite Close-Up (Esri) -->
+              <div id="satellite-closeup-panel" style="height:50%; position:relative; flex-shrink:0; background:#0f172a;">
+                <div id="satellite-closeup-map" style="width:100%; height:100%;"></div>
+
+                <!-- Badge: Top-left label -->
+                <div style="position:absolute; top:10px; left:10px; z-index:1000; background:rgba(255,255,255,0.95); padding:4px 11px; border-radius:20px; font-size:11px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:6px; box-shadow:0 2px 10px rgba(0,0,0,0.18); border:1px solid #e2e8f0; pointer-events:none;">
+                  <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,0.25);"></span>
+                  🛰️ Satellite Close-Up — Defect Site
                 </div>
-                <!-- Coord display -->
-                <div id="sv-coords" style="position:absolute; bottom:8px; right:10px; z-index:10; background:rgba(15,23,42,0.80); color:#e2e8f0; font-size:10px; font-weight:600; padding:3px 9px; border-radius:12px; pointer-events:none; letter-spacing:0.03em;">
-                  📍 12.9634, 77.5755
+
+                <!-- Coords badge: bottom-right -->
+                <div id="sv-coords" style="position:absolute; bottom:10px; right:10px; z-index:1000; background:rgba(15,23,42,0.82); color:#e2e8f0; font-size:10px; font-weight:700; padding:4px 10px; border-radius:12px; pointer-events:none; letter-spacing:0.04em;">
+                  📍 12.9716, 77.5946
+                </div>
+
+                <!-- Google Maps link badge -->
+                <div id="gmaps-link-badge" style="position:absolute; bottom:10px; left:10px; z-index:1000;">
+                  <a id="gmaps-link" href="https://www.google.com/maps/@12.9716,77.5946,18z" target="_blank"
+                    style="background:rgba(255,255,255,0.93); color:#1d4ed8; font-size:10px; font-weight:700; padding:4px 10px; border-radius:12px; text-decoration:none; display:flex; align-items:center; gap:4px; border:1px solid #bfdbfe; box-shadow:0 2px 8px rgba(0,0,0,0.12);">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    Open in Google Maps ↗
+                  </a>
                 </div>
               </div>
 
               <!-- DIVIDER HANDLE -->
-              <div style="height:5px; background:linear-gradient(90deg,#e2e8f0,#cbd5e1,#e2e8f0); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                <div style="width:36px; height:3px; background:#94a3b8; border-radius:3px;"></div>
+              <div style="height:6px; background:linear-gradient(90deg,#dbeafe,#bfdbfe,#dbeafe); display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:row-resize;">
+                <div style="width:40px; height:3px; background:#93c5fd; border-radius:3px;"></div>
               </div>
 
-              <!-- BOTTOM HALF: Leaflet Road Map -->
-              <div style="height:calc(50% - 5px); position:relative; flex-shrink:0; flex:1;">
+              <!-- BOTTOM HALF: Leaflet Road Map with markers -->
+              <div style="height:calc(50% - 6px); position:relative; flex-shrink:0; flex:1;">
                 <div id="map" style="width:100%; height:100%;"></div>
+
+                <!-- Map Mode Label -->
+                <div style="position:absolute; top:10px; left:10px; z-index:1000; background:rgba(255,255,255,0.95); padding:4px 11px; border-radius:20px; font-size:11px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(0,0,0,0.12); border:1px solid #e2e8f0; pointer-events:none;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="#2563eb"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+                  Road Map — Priority Dispatch View
+                </div>
+
                 <!-- Map Legend Overlay -->
                 <div class="absolute bottom-4 left-4 z-[1000] bg-white/96 backdrop-blur-md p-3 rounded-xl border border-slate-200 text-[10.5px] space-y-1.5 shadow-xl text-slate-800">
                   <span class="font-extrabold text-slate-900 block mb-1">Dynamic Priority Tiers</span>

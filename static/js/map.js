@@ -2,9 +2,15 @@
  * Geospatial GIS Map Engine using Leaflet.js
  * Visualizes infrastructure complaints, priority-coded markers, 65m de-duplication buffers,
  * and high-resolution Satellite Imagery toggle (Esri World Imagery).
+ * 
+ * Split-screen layout:
+ *  TOP    → satelliteCloseupMap: Esri satellite zoomed to zoom-19 close-up of defect
+ *  BOTTOM → cityMap: OSM road map with all complaint markers & priority rings
  */
 
 let cityMap = null;
+let satelliteCloseupMap = null;    // Top panel: satellite close-up
+let closeupMarker = null;          // Red pin on close-up map
 let markerLayerGroup = null;
 let radiusLayerGroup = null;
 let streetTileLayer = null;
@@ -20,19 +26,17 @@ function initMap() {
   const mapEl = document.getElementById("map");
   if (!mapEl) return;
 
-  // 1. Street Map Tiles (OpenStreetMap)
+  // ── BOTTOM PANEL: OSM Road Map ──────────────────────────────────────────
   streetTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors | CivicPulse GIS'
   });
 
-  // 2. High-Resolution Satellite Tiles (Esri World Imagery)
   satelliteTileLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 19,
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
   });
 
-  // Initialize Map
   cityMap = L.map("map", {
     center: BENGALURU_CENTER,
     zoom: 12,
@@ -40,22 +44,63 @@ function initMap() {
     zoomControl: true
   });
 
-  // Add Layer Switcher Control in Top-Right Corner
   const baseMaps = {
     "🗺️ Standard Street Map": streetTileLayer,
     "🛰️ High-Res Satellite View": satelliteTileLayer
   };
-
   L.control.layers(baseMaps, null, { position: "topright" }).addTo(cityMap);
 
   markerLayerGroup = L.layerGroup().addTo(cityMap);
   radiusLayerGroup = L.layerGroup().addTo(cityMap);
 
-  // Sync button text on layer change
   cityMap.on("baselayerchange", function(e) {
     isSatelliteMode = (e.name.includes("Satellite"));
     updateSatelliteButtonState();
   });
+
+  // ── TOP PANEL: Satellite Close-Up Map ──────────────────────────────────
+  initSatelliteCloseup();
+}
+
+/**
+ * Initializes the top satellite close-up panel (Esri World Imagery, zoom 18).
+ * Shows a red pulsing pin exactly at the selected defect location.
+ */
+function initSatelliteCloseup() {
+  const el = document.getElementById("satellite-closeup-map");
+  if (!el || satelliteCloseupMap) return;
+
+  satelliteCloseupMap = L.map("satellite-closeup-map", {
+    center: BENGALURU_CENTER,
+    zoom: 18,
+    zoomControl: false,
+    attributionControl: false,
+    dragging: true,
+    scrollWheelZoom: false,
+    doubleClickZoom: false
+  });
+
+  // Esri satellite tiles — high resolution aerial imagery
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 20,
+    attribution: 'Tiles &copy; Esri'
+  }).addTo(satelliteCloseupMap);
+
+  // Red pulsing crosshair pin
+  const crosshairIcon = L.divIcon({
+    className: "",
+    html: `<div style="
+      width:22px; height:22px; border-radius:50%;
+      background:rgba(239,68,68,0.9);
+      border:3px solid #fff;
+      box-shadow:0 0 0 4px rgba(239,68,68,0.35), 0 2px 8px rgba(0,0,0,0.4);
+      animation:pulse-ring 1.6s ease-out infinite;
+    "></div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11]
+  });
+
+  closeupMarker = L.marker(BENGALURU_CENTER, { icon: crosshairIcon }).addTo(satelliteCloseupMap);
 }
 
 function toggleSatelliteView() {
@@ -188,21 +233,40 @@ function zoomSatellite(lat, lng) {
     toggleSatelliteView();
   }
   cityMap.setView([lat, lng], 18, { animate: true });
+  // Also update satellite close-up top panel
+  updateSatelliteCloseup(lat, lng);
 }
 
 /**
- * updateStreetView — syncs the top Street View iframe to a lat/lng.
- * Uses the Google Maps embed URL for Street View (no API key required).
+ * updateSatelliteCloseup — pans the top satellite panel to lat/lng at zoom 18/19
+ * and moves the red crosshair pin. Also updates coord badges and Google Maps link.
  */
 function updateStreetView(lat, lng) {
-  const iframe = document.getElementById("street-view-iframe");
-  const coordsEl = document.getElementById("sv-coords");
-  if (iframe) {
-    // Google Maps Street View embed: @lat,lng,3a = street-level, 75y = FOV, 0h = heading, 90t = tilt
-    iframe.src = `https://www.google.com/maps/@${lat},${lng},3a,75y,0h,90t/data=!3m6!1e1`;
+  // Alias kept so popup buttons still work (they call updateStreetView)
+  updateSatelliteCloseup(lat, lng);
+}
+
+function updateSatelliteCloseup(lat, lng) {
+  if (!satelliteCloseupMap) initSatelliteCloseup();
+  if (!satelliteCloseupMap) return;
+
+  const zoom = 19; // Max close-up for best aerial detail
+  satelliteCloseupMap.setView([lat, lng], zoom, { animate: true, duration: 0.6 });
+
+  if (closeupMarker) {
+    closeupMarker.setLatLng([lat, lng]);
   }
+
+  // Update coord badge
+  const coordsEl = document.getElementById("sv-coords");
   if (coordsEl) {
     coordsEl.textContent = `📍 ${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`;
+  }
+
+  // Update "Open in Google Maps" link
+  const gmLink = document.getElementById("gmaps-link");
+  if (gmLink) {
+    gmLink.href = `https://www.google.com/maps/@${lat},${lng},18z`;
   }
 }
 
@@ -215,8 +279,8 @@ function focusTicketOnMap(lat, lng, enableSatellite = false) {
     }
     const zoomLevel = enableSatellite ? 18 : 16;
     cityMap.setView([lat, lng], zoomLevel, { animate: true });
-    // Also update the Street View panel to this location
-    updateStreetView(lat, lng);
+    // Also update the satellite close-up panel to this location
+    updateSatelliteCloseup(lat, lng);
   }, 200);
 }
 
