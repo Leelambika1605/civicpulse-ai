@@ -150,22 +150,55 @@
               <div id="nlp-chips" class="flex flex-wrap gap-1.5 mt-2 min-h-[24px]"></div>
             </div>
 
-            <!-- Location & Landmark Selector -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Exact Location Input & Google Maps Integration -->
+            <div class="space-y-3">
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Location / Landmark Preset</label>
-                <select id="select-landmark" onchange="handleLandmarkChange()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all">
-                  <option value="custom">📍 Custom / Current Location</option>
-                  <option value="victoria" selected>Victoria Hospital Emergency Gate, Kalasipalya</option>
-                  <option value="stjoseph">St. Joseph High School Gate, Residency Rd</option>
-                  <option value="koramangala">Sony World Junction, Koramangala 100ft Rd</option>
-                  <option value="mgroad">MG Road Metro Station Gate 2</option>
-                  <option value="indiranagar">12th Main Intersection, Indiranagar</option>
-                  <option value="whitefield">ITPL Main Road, Whitefield</option>
-                  <option value="jayanagar">4th Block Bus Stand, Jayanagar</option>
-                </select>
+                <div class="flex justify-between items-center mb-1">
+                  <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <span class="text-blue-600">📍</span> Exact Location / Street Address <span class="text-red-500">*</span>
+                  </label>
+                  <span id="geo-status-badge" class="text-[10px] font-semibold text-slate-500"></span>
+                </div>
+
+                <div class="flex items-stretch gap-2">
+                  <div class="relative flex-1">
+                    <input type="text" id="input-address" required placeholder="Enter exact landmark, building, college or address (e.g. Amruta Institute of Engineering, Bidadi)" value="Victoria Hospital Emergency Gate, Kalasipalya, Bengaluru" class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-800 font-medium focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all">
+                    <span class="absolute left-3 top-2.5 text-slate-400">
+                      <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                    </span>
+                  </div>
+                  <button type="button" onclick="locateAddressOnMap()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap cursor-pointer" title="Find this exact address on Google Maps">
+                    <i data-lucide="search" class="w-3.5 h-3.5"></i> Search Address
+                  </button>
+                  <button type="button" onclick="useCurrentLocationGPS()" id="btn-current-location" class="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap cursor-pointer" title="Capture your current GPS location directly">
+                    <i data-lucide="crosshair" class="w-3.5 h-3.5"></i> Use Current Location
+                  </button>
+                </div>
+
+                <!-- Preset landmark shortcut row & Coordinates -->
+                <div class="mt-2 flex items-center justify-between flex-wrap gap-2 text-[11px] bg-slate-100/70 p-2 rounded-lg border border-slate-200">
+                  <div class="flex items-center gap-1.5 text-slate-600">
+                    <span class="font-medium">Or quick preset:</span>
+                    <select id="select-landmark" onchange="handleLandmarkChange()" class="bg-white border border-slate-300 rounded px-2 py-0.5 text-[11px] text-slate-700 focus:outline-none focus:border-blue-500">
+                      <option value="custom">📍 Custom / Current Location</option>
+                      <option value="victoria" selected>Victoria Hospital Emergency Gate, Kalasipalya</option>
+                      <option value="stjoseph">St. Joseph High School Gate, Residency Rd</option>
+                      <option value="koramangala">Sony World Junction, Koramangala 100ft Rd</option>
+                      <option value="mgroad">MG Road Metro Station Gate 2</option>
+                      <option value="indiranagar">12th Main Intersection, Indiranagar</option>
+                      <option value="whitefield">ITPL Main Road, Whitefield</option>
+                      <option value="jayanagar">4th Block Bus Stand, Jayanagar</option>
+                    </select>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span id="micro-coords-display" class="font-mono text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                      12.9634, 77.5755
+                    </span>
+                  </div>
+                </div>
               </div>
 
+              <!-- Infrastructure Zone Type -->
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Infrastructure Zone Type</label>
                 <select id="select-zone" onchange="updateDynamicCalculationPreview()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all">
@@ -178,28 +211,41 @@
                   <option value="Suburban / Low Density">🌳 Suburban / Low Density (Weight 3.5)</option>
                 </select>
               </div>
-            </div>
 
-            <!-- Rapido-Inspired Precision Micro-Pinning (Satellite View) -->
-            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-300">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-                  📍 Rapido-Style Precision Micro-Pin (Drag Pin to Exact Spot)
-                </span>
-                <span id="micro-coords-display" class="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  12.9634, 77.5755
-                </span>
-              </div>
-              <p class="text-[11px] text-slate-500 mb-2">
-                Drag the red pin on the satellite view to pinpoint the exact lane, building gate, or divider.
-              </p>
-              <!-- Mini Satellite Map Container -->
-              <div id="citizen-mini-map" class="w-full h-44 rounded-lg border border-slate-300 shadow-sm relative z-0"></div>
-              
-              <div class="mt-2.5">
-                <label class="block text-[11px] font-bold text-slate-600 mb-1">Exact Access Instructions / Gate Note</label>
-                <input type="text" id="input-gate-note" placeholder="e.g., Left lane, 10m before Victoria emergency ramp entrance" value="In front of Emergency Ambulance Bay, Gate 1" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-600">
+              <!-- Google Maps Location Verification Panel -->
+              <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-300">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    🗺️ Google Maps Location Verification
+                  </span>
+                  <div class="flex items-center gap-1.5">
+                    <span id="location-source-badge" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      ✅ Pinned
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Google Maps Interactive Map Container -->
+                <div id="citizen-google-map" class="w-full h-44 rounded-lg border border-slate-300 shadow-sm relative z-0"></div>
+
+                <!-- Google Maps Direct Actions -->
+                <div class="mt-2.5 flex items-center justify-between flex-wrap gap-2">
+                  <div class="flex items-center gap-2">
+                    <button type="button" onclick="openCurrentInGoogleMaps()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer" title="Open exact pin in Google Maps">
+                      <i data-lucide="external-link" class="w-3.5 h-3.5 text-blue-600"></i> Open in Google Maps ↗
+                    </button>
+                    <button type="button" onclick="openDirectionsInGoogleMaps()" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer" title="Get directions in Google Maps">
+                      <i data-lucide="navigation" class="w-3.5 h-3.5 text-blue-600"></i> Navigate via Google Maps ↗
+                    </button>
+                  </div>
+                  <span class="text-[10px] text-slate-500 italic">Click anywhere on map to adjust pin</span>
+                </div>
+
+                <div class="mt-2.5">
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Access Instructions / Landmark Note (Optional)</label>
+                  <input type="text" id="input-gate-note" placeholder="e.g., Near gate entrance or opposite building" value="In front of Emergency Ambulance Bay, Gate 1" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-600">
+                </div>
               </div>
             </div>
 
@@ -231,7 +277,6 @@
             <!-- Hidden GPS lat/lng inputs -->
             <input type="hidden" id="input-lat" value="12.9634">
             <input type="hidden" id="input-lng" value="77.5755">
-            <input type="hidden" id="input-address" value="Victoria Hospital Emergency Gate, Kalasipalya, Bengaluru">
 
             <!-- Submit Button -->
             <button type="submit" id="submit-btn" class="w-full py-3.5 px-4 rounded-xl font-extrabold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2">

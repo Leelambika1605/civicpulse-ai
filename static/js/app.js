@@ -7,6 +7,8 @@ let currentSelectedImageBase64 = null;
 let currentResolvingTicketId = null;
 let citizenMiniMap = null;
 let citizenDraggableMarker = null;
+let citizenGoogleMap = null;
+let citizenLocationMarker = null;
 
 // Landmark coordinates & addresses
 const LANDMARKS = {
@@ -107,84 +109,355 @@ document.addEventListener("DOMContentLoaded", () => {
   loadComplaints();
   loadStats();
   triggerLiveNLPPreview();
-  initCitizenMiniMap();
+  initCitizenGoogleMap();
+
+  const addrInput = document.getElementById("input-address");
+  if (addrInput) {
+    addrInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        locateAddressOnMap();
+      }
+    });
+  }
+
   if (window.lucide) lucide.createIcons();
 });
 
-// Rapido-Inspired Satellite Micro-Pin Map for Citizens
-function initCitizenMiniMap() {
-  const mapEl = document.getElementById("citizen-mini-map");
-  if (!mapEl || citizenMiniMap) return;
+// Google Maps Integrated Location Verification for Citizens
+function initCitizenGoogleMap() {
+  const mapEl = document.getElementById("citizen-google-map") || document.getElementById("citizen-mini-map");
+  if (!mapEl || citizenGoogleMap) return;
 
-  const initialLat = 12.9634;
-  const initialLng = 77.5755;
+  const latEl = document.getElementById("input-lat");
+  const lngEl = document.getElementById("input-lng");
+  const initialLat = latEl && parseFloat(latEl.value) ? parseFloat(latEl.value) : 12.9634;
+  const initialLng = lngEl && parseFloat(lngEl.value) ? parseFloat(lngEl.value) : 77.5755;
 
-  citizenMiniMap = L.map("citizen-mini-map", {
+  citizenGoogleMap = L.map(mapEl.id, {
     center: [initialLat, initialLng],
-    zoom: 17,
-    zoomControl: false,
+    zoom: 16,
+    zoomControl: true,
     attributionControl: false
   });
 
-  // Esri High-Resolution Satellite Tiles
-  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-    maxZoom: 19
-  }).addTo(citizenMiniMap);
+  // Google Maps Vector Road Tiles (clean, official styling, reliable)
+  const googleTileLayer = L.tileLayer("https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+  }).addTo(citizenGoogleMap);
 
-  // Custom Draggable Pin
-  const pinIcon = L.divIcon({
-    className: "custom-leaflet-marker",
-    html: `<div style="background:#ef4444; width:20px; height:20px; border-radius:50%; border:3px solid #ffffff; box-shadow:0 0 10px #ef4444; cursor:grab;"></div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10]
+  // Fallback to OSM in case network restricts Google tile subdomains
+  googleTileLayer.on("tileerror", function() {
+    if (!citizenGoogleMap._hasOsmFallback) {
+      citizenGoogleMap._hasOsmFallback = true;
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(citizenGoogleMap);
+    }
   });
 
-  citizenDraggableMarker = L.marker([initialLat, initialLng], {
-    draggable: true,
-    icon: pinIcon
-  }).addTo(citizenMiniMap);
+  // Official Google Maps Style Pin Marker
+  const googlePinIcon = L.divIcon({
+    className: "google-maps-pin",
+    html: `
+      <div style="width:30px; height:40px; transform:translate(-15px, -38px); filter:drop-shadow(0 3px 6px rgba(0,0,0,0.35)); cursor:pointer;">
+        <svg viewBox="0 0 24 34" width="30" height="40">
+          <path fill="#EA4335" d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22c0-6.63-5.37-12-12-12z"/>
+          <circle fill="#8B0000" cx="12" cy="12" r="5.5"/>
+          <circle fill="#FFFFFF" cx="12" cy="12" r="4"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [30, 40],
+    iconAnchor: [15, 38]
+  });
 
-  citizenDraggableMarker.bindTooltip("Drag me directly to the defect lane / gate", { permanent: true, direction: "top" });
+  citizenLocationMarker = L.marker([initialLat, initialLng], {
+    icon: googlePinIcon,
+    draggable: true
+  }).addTo(citizenGoogleMap);
 
-  citizenDraggableMarker.on("dragend", function(e) {
+  citizenLocationMarker.bindTooltip("📍 Exact Defect Location", { permanent: false, direction: "top" });
+
+  citizenLocationMarker.on("dragend", function(e) {
     const pos = e.target.getLatLng();
-    updateCitizenCoordinates(pos.lat, pos.lng);
+    updateLocationCoordinates(pos.lat, pos.lng, true);
+    const srcBadge = document.getElementById("location-source-badge");
+    if (srcBadge) {
+      srcBadge.innerText = "📍 Adjusted Pin";
+      srcBadge.className = "text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200";
+    }
   });
 
-  citizenMiniMap.on("click", function(e) {
-    citizenDraggableMarker.setLatLng(e.latlng);
-    updateCitizenCoordinates(e.latlng.lat, e.latlng.lng);
+  citizenGoogleMap.on("click", function(e) {
+    citizenLocationMarker.setLatLng(e.latlng);
+    updateLocationCoordinates(e.latlng.lat, e.latlng.lng, true);
+    const srcBadge = document.getElementById("location-source-badge");
+    if (srcBadge) {
+      srcBadge.innerText = "📍 Clicked on Map";
+      srcBadge.className = "text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200";
+    }
   });
+
+  // Backward compatibility aliases
+  citizenMiniMap = citizenGoogleMap;
+  citizenDraggableMarker = citizenLocationMarker;
 }
 
-function updateCitizenCoordinates(lat, lng) {
+// Backward compatibility alias
+function initCitizenMiniMap() {
+  initCitizenGoogleMap();
+}
+
+// Update coordinates in inputs and on map
+function updateLocationCoordinates(lat, lng, shouldReverseGeocode = false) {
   const latEl = document.getElementById("input-lat");
   const lngEl = document.getElementById("input-lng");
   const displayEl = document.getElementById("micro-coords-display");
+  const numLat = parseFloat(lat);
+  const numLng = parseFloat(lng);
 
-  if (latEl) latEl.value = lat.toFixed(6);
-  if (lngEl) lngEl.value = lng.toFixed(6);
-  if (displayEl) displayEl.innerText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  if (latEl) latEl.value = numLat.toFixed(6);
+  if (lngEl) lngEl.value = numLng.toFixed(6);
+  if (displayEl) displayEl.innerText = `${numLat.toFixed(5)}, ${numLng.toFixed(5)}`;
+
+  if (citizenGoogleMap && citizenLocationMarker) {
+    citizenLocationMarker.setLatLng([numLat, numLng]);
+    citizenGoogleMap.setView([numLat, numLng], 16, { animate: true });
+  }
+
+  if (shouldReverseGeocode) {
+    reverseGeocodeLocation(numLat, numLng);
+  }
+
+  updateDynamicCalculationPreview();
+}
+
+// Alias for older callers
+function updateCitizenCoordinates(lat, lng) {
+  updateLocationCoordinates(lat, lng, false);
+}
+
+// Reverse Geocode using Nominatim API to get human-readable street address
+async function reverseGeocodeLocation(lat, lng) {
+  const statusBadge = document.getElementById("geo-status-badge");
+  if (statusBadge) {
+    statusBadge.innerText = "🔄 Resolving street address...";
+    statusBadge.className = "text-[10px] font-bold text-blue-600 animate-pulse";
+  }
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+      headers: { "Accept-Language": "en" }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.display_name) {
+        const addrInput = document.getElementById("input-address");
+        if (addrInput) addrInput.value = data.display_name;
+        if (statusBadge) {
+          statusBadge.innerText = "✅ Address synced with map";
+          statusBadge.className = "text-[10px] font-bold text-emerald-600";
+        }
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn("Reverse geocode failed:", e);
+  }
+  if (statusBadge) {
+    statusBadge.innerText = "";
+  }
+}
+
+// Exact Device GPS Detection
+function useCurrentLocationGPS() {
+  const btn = document.getElementById("btn-current-location");
+  const statusBadge = document.getElementById("geo-status-badge");
+
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser. Please type your location manually.");
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="animate-spin mr-1.5">⌛</span> Locating...`;
+  }
+  if (statusBadge) {
+    statusBadge.innerText = "🛰️ Querying exact device GPS...";
+    statusBadge.className = "text-[10px] font-bold text-amber-600 animate-pulse";
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const accuracy = Math.round(position.coords.accuracy || 5);
+
+      updateLocationCoordinates(lat, lng, false);
+
+      const landmarkSelect = document.getElementById("select-landmark");
+      if (landmarkSelect) landmarkSelect.value = "custom";
+
+      const srcBadge = document.getElementById("location-source-badge");
+      if (srcBadge) {
+        srcBadge.innerText = `🛰️ GPS Active (±${accuracy}m)`;
+        srcBadge.className = "text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200";
+      }
+
+      if (statusBadge) {
+        statusBadge.innerText = `✅ GPS Locked (±${accuracy}m accuracy)`;
+        statusBadge.className = "text-[10px] font-bold text-emerald-600";
+      }
+
+      // Reverse geocode to populate address field
+      await reverseGeocodeLocation(lat, lng);
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="crosshair" class="w-3.5 h-3.5"></i> Use Current Location`;
+        if (window.lucide) lucide.createIcons();
+      }
+    },
+    (error) => {
+      console.warn("GPS error:", error);
+      let errorMsg = "Unable to fetch GPS position.";
+      if (error.code === 1) errorMsg = "Location permission denied.";
+      else if (error.code === 2) errorMsg = "Position unavailable.";
+      else if (error.code === 3) errorMsg = "Location request timed out.";
+
+      if (statusBadge) {
+        statusBadge.innerText = `⚠️ ${errorMsg} Please type your address.`;
+        statusBadge.className = "text-[10px] font-bold text-amber-700";
+      }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="crosshair" class="w-3.5 h-3.5"></i> Use Current Location`;
+        if (window.lucide) lucide.createIcons();
+      }
+      alert(`${errorMsg} Please enter your address or landmark directly in the address field.`);
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+  );
+}
+
+// Geocode user typed address onto map
+async function locateAddressOnMap() {
+  const addrInput = document.getElementById("input-address");
+  const address = addrInput ? addrInput.value.trim() : "";
+  if (!address) {
+    alert("Please enter a location or address to search.");
+    return;
+  }
+
+  const statusBadge = document.getElementById("geo-status-badge");
+  if (statusBadge) {
+    statusBadge.innerText = "🔍 Locating on Google Maps...";
+    statusBadge.className = "text-[10px] font-bold text-blue-600 animate-pulse";
+  }
+
+  // Multi-tier geocode queries for reliability
+  const queries = [
+    address,
+    address.split(",").slice(-2).join(",").trim(),
+    address.split(",")[0].trim()
+  ].filter(q => q && q.length >= 3);
+
+  let match = null;
+  for (const q of queries) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
+      const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+      if (res.ok) {
+        const results = await res.json();
+        if (results && results.length > 0) {
+          match = results[0];
+          break;
+        }
+      }
+    } catch (e) {
+      console.warn("Geocode query error:", e);
+    }
+  }
+
+  if (match) {
+    const lat = parseFloat(match.lat);
+    const lng = parseFloat(match.lon);
+    updateLocationCoordinates(lat, lng, false);
+
+    const srcBadge = document.getElementById("location-source-badge");
+    if (srcBadge) {
+      srcBadge.innerText = "🔍 Verified Location";
+      srcBadge.className = "text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200";
+    }
+    if (statusBadge) {
+      statusBadge.innerText = `✅ Found on Google Maps`;
+      statusBadge.className = "text-[10px] font-bold text-emerald-600";
+    }
+  } else {
+    if (statusBadge) {
+      statusBadge.innerText = "ℹ️ Address saved for municipal crew (adjust pin on map if needed)";
+      statusBadge.className = "text-[10px] font-medium text-slate-500";
+    }
+  }
+
+  const landmarkSelect = document.getElementById("select-landmark");
+  if (landmarkSelect) landmarkSelect.value = "custom";
+}
+
+// Open current coordinates in Google Maps (Full View)
+function openCurrentInGoogleMaps() {
+  const latEl = document.getElementById("input-lat");
+  const lngEl = document.getElementById("input-lng");
+  const lat = latEl ? latEl.value : "12.9634";
+  const lng = lngEl ? lngEl.value : "77.5755";
+  const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+// Open Google Maps turn-by-turn navigation / directions
+function openDirectionsInGoogleMaps() {
+  const latEl = document.getElementById("input-lat");
+  const lngEl = document.getElementById("input-lng");
+  const lat = latEl ? latEl.value : "12.9634";
+  const lng = lngEl ? lngEl.value : "77.5755";
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 // Landmark Preset Change
 function handleLandmarkChange() {
   const val = document.getElementById("select-landmark").value;
+  if (val === "custom") {
+    const addrInput = document.getElementById("input-address");
+    if (addrInput) addrInput.focus();
+    const srcBadge = document.getElementById("location-source-badge");
+    if (srcBadge) {
+      srcBadge.innerText = "✍️ Custom Address";
+      srcBadge.className = "text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200";
+    }
+    return;
+  }
+
   if (val && LANDMARKS[val]) {
     const data = LANDMARKS[val];
-    updateCitizenCoordinates(data.lat, data.lng);
-    document.getElementById("input-address").value = data.name;
+    updateLocationCoordinates(data.lat, data.lng, false);
+    const addrInput = document.getElementById("input-address");
+    if (addrInput) addrInput.value = data.name;
     document.getElementById("select-zone").value = data.zone;
     const gateNote = document.getElementById("input-gate-note");
     if (gateNote && data.note) gateNote.value = data.note;
 
-    if (citizenMiniMap && citizenDraggableMarker) {
-      citizenMiniMap.setView([data.lat, data.lng], 17, { animate: true });
-      citizenDraggableMarker.setLatLng([data.lat, data.lng]);
+    const srcBadge = document.getElementById("location-source-badge");
+    if (srcBadge) {
+      srcBadge.innerText = "📍 Preset Landmark";
+      srcBadge.className = "text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200";
     }
+
     updateDynamicCalculationPreview();
   }
 }
+
 function switchTab(tab) {
   const citizenSec = document.getElementById("tab-citizen-content");
   const adminSec = document.getElementById("tab-admin-content");
@@ -622,8 +895,12 @@ function renderCitizenFeed(complaints) {
             <i data-lucide="thumbs-up" class="w-3.5 h-3.5"></i> Upvote (${ticket.report_count})
           </button>
 
-          <button onclick="focusTicketOnMap(${ticket.lat}, ${ticket.lng})" class="px-3.5 py-1.5 text-[11px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg flex items-center gap-1.5 border border-blue-200 transition-all shadow-sm">
+          <button onclick="focusTicketOnMap(${ticket.lat}, ${ticket.lng})" class="px-3 py-1.5 text-[11px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg flex items-center gap-1.5 border border-blue-200 transition-all shadow-sm">
             <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> View GIS Pin
+          </button>
+
+          <button onclick="openGoogleMapsPin(${ticket.lat}, ${ticket.lng})" class="px-3 py-1.5 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 border border-slate-300 shadow-sm transition-all" title="Open in Google Maps">
+            <i data-lucide="external-link" class="w-3.5 h-3.5 text-blue-600"></i> Google Maps ↗
           </button>
         </div>
       </div>
