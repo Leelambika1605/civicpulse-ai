@@ -5,6 +5,8 @@
 let allComplaints = [];
 let currentSelectedImageBase64 = null;
 let currentResolvingTicketId = null;
+let citizenMiniMap = null;
+let citizenDraggableMarker = null;
 
 // Landmark coordinates & addresses
 const LANDMARKS = {
@@ -12,43 +14,50 @@ const LANDMARKS = {
     name: "Victoria Hospital Emergency Gate, Kalasipalya, Bengaluru",
     lat: 12.9634,
     lng: 77.5755,
-    zone: "Hospital Zone"
+    zone: "Hospital Zone",
+    note: "Emergency Ramp entrance, Kalasipalya gate"
   },
   stjoseph: {
     name: "St. Joseph High School Gate, Residency Rd, Bengaluru",
     lat: 12.9719,
     lng: 77.5996,
-    zone: "School / College Zone"
+    zone: "School / College Zone",
+    note: "Near Primary School Bus Bay, Gate 2"
   },
   koramangala: {
     name: "Sony World Junction, Koramangala 100ft Rd, Bengaluru",
     lat: 12.9352,
     lng: 77.6245,
-    zone: "Major Arterial Road / Highway"
+    zone: "Major Arterial Road / Highway",
+    note: "Left lane heading towards Oasis Mall"
   },
   mgroad: {
     name: "MG Road Metro Station Gate 2, Bengaluru",
     lat: 12.9754,
     lng: 77.6066,
-    zone: "Metro / Transit Interchange"
+    zone: "Metro / Transit Interchange",
+    note: "Footpath right beside Metro Escalator exit"
   },
   indiranagar: {
     name: "12th Main Intersection, 100ft Road, Indiranagar, Bengaluru",
     lat: 12.9784,
     lng: 77.6408,
-    zone: "Commercial Market Area"
+    zone: "Commercial Market Area",
+    note: "Outside corner bakery, 100ft road crossing"
   },
   whitefield: {
     name: "ITPL Main Road, Pattandur Agrahara, Whitefield, Bengaluru",
     lat: 12.9856,
     lng: 77.7289,
-    zone: "Major Arterial Road / Highway"
+    zone: "Major Arterial Road / Highway",
+    note: "Service road under ITPL flyover pillar 42"
   },
   jayanagar: {
     name: "4th Block Bus Stand, Jayanagar, Bengaluru",
     lat: 12.9250,
     lng: 77.5838,
-    zone: "Dense Residential Colony"
+    zone: "Dense Residential Colony",
+    note: "Behind Bus Shelter 3, commercial lane"
   }
 };
 
@@ -83,10 +92,84 @@ document.addEventListener("DOMContentLoaded", () => {
   loadComplaints();
   loadStats();
   triggerLiveNLPPreview();
+  initCitizenMiniMap();
   if (window.lucide) lucide.createIcons();
 });
 
-// Tab Switcher
+// Rapido-Inspired Satellite Micro-Pin Map for Citizens
+function initCitizenMiniMap() {
+  const mapEl = document.getElementById("citizen-mini-map");
+  if (!mapEl || citizenMiniMap) return;
+
+  const initialLat = 12.9634;
+  const initialLng = 77.5755;
+
+  citizenMiniMap = L.map("citizen-mini-map", {
+    center: [initialLat, initialLng],
+    zoom: 17,
+    zoomControl: false,
+    attributionControl: false
+  });
+
+  // Esri High-Resolution Satellite Tiles
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 19
+  }).addTo(citizenMiniMap);
+
+  // Custom Draggable Pin
+  const pinIcon = L.divIcon({
+    className: "custom-leaflet-marker",
+    html: `<div style="background:#ef4444; width:20px; height:20px; border-radius:50%; border:3px solid #ffffff; box-shadow:0 0 10px #ef4444; cursor:grab;"></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  });
+
+  citizenDraggableMarker = L.marker([initialLat, initialLng], {
+    draggable: true,
+    icon: pinIcon
+  }).addTo(citizenMiniMap);
+
+  citizenDraggableMarker.bindTooltip("Drag me directly to the defect lane / gate", { permanent: true, direction: "top" });
+
+  citizenDraggableMarker.on("dragend", function(e) {
+    const pos = e.target.getLatLng();
+    updateCitizenCoordinates(pos.lat, pos.lng);
+  });
+
+  citizenMiniMap.on("click", function(e) {
+    citizenDraggableMarker.setLatLng(e.latlng);
+    updateCitizenCoordinates(e.latlng.lat, e.latlng.lng);
+  });
+}
+
+function updateCitizenCoordinates(lat, lng) {
+  const latEl = document.getElementById("input-lat");
+  const lngEl = document.getElementById("input-lng");
+  const displayEl = document.getElementById("micro-coords-display");
+
+  if (latEl) latEl.value = lat.toFixed(6);
+  if (lngEl) lngEl.value = lng.toFixed(6);
+  if (displayEl) displayEl.innerText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
+// Landmark Preset Change
+function handleLandmarkChange() {
+  const val = document.getElementById("select-landmark").value;
+  if (val && LANDMARKS[val]) {
+    const data = LANDMARKS[val];
+    updateCitizenCoordinates(data.lat, data.lng);
+    document.getElementById("input-address").value = data.name;
+    document.getElementById("select-zone").value = data.zone;
+    const gateNote = document.getElementById("input-gate-note");
+    if (gateNote && data.note) gateNote.value = data.note;
+
+    if (citizenMiniMap && citizenDraggableMarker) {
+      citizenMiniMap.setView([data.lat, data.lng], 17, { animate: true });
+      citizenDraggableMarker.setLatLng([data.lat, data.lng]);
+    }
+    updateDynamicCalculationPreview();
+  }
+}
 function switchTab(tab) {
   const citizenSec = document.getElementById("tab-citizen-content");
   const adminSec = document.getElementById("tab-admin-content");
@@ -123,18 +206,8 @@ function switchTab(tab) {
   }
 }
 
-// Landmark Preset Change
-function handleLandmarkChange() {
-  const val = document.getElementById("select-landmark").value;
-  if (val && LANDMARKS[val]) {
-    const data = LANDMARKS[val];
-    document.getElementById("input-lat").value = data.lat;
-    document.getElementById("input-lng").value = data.lng;
-    document.getElementById("input-address").value = data.name;
-    document.getElementById("select-zone").value = data.zone;
-    updateDynamicCalculationPreview();
-  }
-}
+// Landmark Preset Change (old duplicate - removed)
+function handleLandmarkChange_old() {}
 
 // Quick Sample Case Loader
 function loadSampleCase(key) {
