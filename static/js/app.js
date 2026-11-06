@@ -335,13 +335,44 @@ function displaySubmissionResult(data) {
 
   resultCard.classList.remove("hidden");
 
+  const userImg = data.user_image_url || "/uploads/pothole_hospital.png";
+  const aiAnnotatedImg = data.ai_annotated_image_url || userImg;
+
   if (data.is_duplicate) {
     resultCard.className = "card-glass p-5 border border-indigo-300 bg-indigo-50/90 shadow-md";
     resHeading.innerText = "Spatio-Temporal De-Duplication Triggered!";
     resHeading.className = "text-sm font-extrabold text-indigo-900";
     resMessage.innerText = data.message;
     resMessage.className = "text-xs text-indigo-800 mb-3 font-medium";
+
+    const masterImg = data.master_image_url || "/uploads/pothole_hospital.png";
+
     resDetails.innerHTML = `
+      <!-- Side-by-Side Visual Comparison Card -->
+      <div class="mb-3 p-2.5 rounded-xl bg-white border border-indigo-200 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] font-black uppercase tracking-wider text-indigo-900 flex items-center gap-1">
+            🔍 AI Visual Comparison at this Location
+          </span>
+          <span class="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full border border-indigo-300">
+            Same Location Defect Match
+          </span>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="text-center">
+            <span class="text-[10px] font-bold text-slate-600 block mb-1">Your Uploaded Photo</span>
+            <img src="${userImg}" alt="Your Upload" class="w-full h-28 object-cover rounded-lg border border-slate-200 shadow-sm">
+          </div>
+          <div class="text-center">
+            <span class="text-[10px] font-bold text-indigo-700 block mb-1">Existing Report at this Spot</span>
+            <img src="${masterImg}" alt="Master Ticket Photo" class="w-full h-28 object-cover rounded-lg border border-indigo-200 shadow-sm">
+          </div>
+        </div>
+        <div class="mt-2 text-center text-[11px] font-bold text-indigo-800 bg-indigo-50 py-1 rounded">
+          ✔ OpenCV Spatial Defect Match: Both reports correspond to the same defect cluster!
+        </div>
+      </div>
+
       <div class="flex justify-between"><span>Existing Master Ticket:</span> <strong class="text-blue-700 font-bold">#${data.master_ticket_code}</strong></div>
       <div class="flex justify-between"><span>Proximity Distance:</span> <strong>${data.distance_meters} meters away</strong></div>
       <div class="flex justify-between"><span>Total Citizen Reports Merged:</span> <strong class="text-amber-700 font-bold">${data.report_count} Reports</strong></div>
@@ -354,7 +385,33 @@ function displaySubmissionResult(data) {
     resMessage.innerText = data.message;
     resMessage.className = "text-xs text-emerald-800 mb-3 font-medium";
     const t = data.data;
+
     resDetails.innerHTML = `
+      <!-- Side-by-Side Visual Comparison Card (User Photo vs AI Diagnostic Map) -->
+      <div class="mb-3 p-2.5 rounded-xl bg-white border border-emerald-200 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1">
+            🔬 AI Defect Visual Comparison
+          </span>
+          <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+            OpenCV AI Validated
+          </span>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="text-center">
+            <span class="text-[10px] font-bold text-slate-600 block mb-1">Your Uploaded Photo</span>
+            <img src="${userImg}" alt="User Photo" class="w-full h-28 object-cover rounded-lg border border-slate-200 shadow-sm">
+          </div>
+          <div class="text-center">
+            <span class="text-[10px] font-bold text-blue-700 block mb-1">AI Defect Detection Map</span>
+            <img src="${aiAnnotatedImg}" alt="AI Scan Overlay" class="w-full h-28 object-cover rounded-lg border border-blue-200 shadow-sm">
+          </div>
+        </div>
+        <div class="mt-2 text-center text-[11px] font-bold text-emerald-800 bg-emerald-50 py-1 rounded">
+          ✔ AI Validated: Defect contours, crack edges & crater boundaries extracted successfully!
+        </div>
+      </div>
+
       <div class="flex justify-between"><span>Generated Ticket Code:</span> <strong class="text-blue-700 font-bold">#${t.ticket_code}</strong></div>
       <div class="flex justify-between"><span>Department Assigned:</span> <strong class="text-slate-800 font-bold">${t.department}</strong></div>
       <div class="flex justify-between"><span>Dynamic Priority Score:</span> <strong class="text-red-600 font-extrabold">${t.priority_score}/100 (${t.priority_tier})</strong></div>

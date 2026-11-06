@@ -153,9 +153,10 @@ class SmartCityRequestHandler(SimpleHTTPRequestHandler):
             category = user_category if user_category and user_category != "Auto-Detect" else nlp_result["detected_category"]
             department = recommended_dept
 
-            # Step B: Computer Vision Defect Severity Analysis
-            cv_result = ai_engine.analyze_image_defect(local_image_path)
+            # Step B: Computer Vision Defect Severity Analysis & Diagnostic Map Generation
+            cv_result = ai_engine.analyze_image_defect(local_image_path, category)
             severity_score = cv_result["severity_score"]
+            ai_annotated_image_url = cv_result.get("ai_annotated_image_url", image_url)
 
             # Step C: Spatio-Temporal De-duplication Check
             existing_complaints = get_all_complaints()
@@ -192,7 +193,10 @@ class SmartCityRequestHandler(SimpleHTTPRequestHandler):
                     "distance_meters": dup_info["distance_meters"],
                     "updated_priority": recomputed["priority_score"],
                     "updated_tier": recomputed["priority_tier"],
-                    "report_count": new_report_count
+                    "report_count": new_report_count,
+                    "user_image_url": image_url,
+                    "ai_annotated_image_url": ai_annotated_image_url,
+                    "master_image_url": master_ticket.get("image_url")
                 })
                 return
 
@@ -240,6 +244,8 @@ class SmartCityRequestHandler(SimpleHTTPRequestHandler):
                 "is_duplicate": False,
                 "message": "New master complaint registered and triaged by AI successfully.",
                 "data": created_ticket,
+                "user_image_url": image_url,
+                "ai_annotated_image_url": ai_annotated_image_url,
                 "ai_breakdown": {
                     "cv_severity": severity_score,
                     "nlp_urgency": urgency_score,
